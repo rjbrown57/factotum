@@ -1,0 +1,19 @@
+apiVersion: factotum.io/v1alpha1
+kind: NodeConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: factotum
+    app.kubernetes.io/managed-by: kustomize
+  name: nodeconfig-sample
+spec:
+  selector:
+    nodeSelector:
+      kubernetes.io/hostname: looknuc3
+  annotations:
+    factotum: applied
+  labels:
+    factotum: applied
+  taints:
+  - key: factotum
+    value:  tainted
+    effect: NoSchedule
