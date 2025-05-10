@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"testing"
 
+	"github.com/rjbrown57/factotum/pkg/factotum/config"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,16 +26,19 @@ func TestRemoveFinalizer(t *testing.T) {
 func TestGetLabelSet(t *testing.T) {
 	nc := &NodeConfig{
 		Spec: NodeConfigSpec{
-			Labels: map[string]string{
-				"key1": "value1",
-				"key2": "value2",
+			CommonSpec: config.CommonSpec{
+				Labels: map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				},
 			},
 		},
 		Status: NodeConfigStatus{
-			AppliedLabels: map[string]string{
-				"key2": "value2",
-				"key3": "value3",
-			},
+			CommonStatus: config.CommonStatus{
+				AppliedLabels: map[string]string{
+					"key2": "value2",
+					"key3": "value3",
+				}},
 		},
 	}
 
@@ -91,8 +96,10 @@ func TestErrorStatus(t *testing.T) {
 			Name:      "test-nodeconfig",
 		},
 		Spec: NodeConfigSpec{
-			Labels:      map[string]string{"key1": "value1"},
-			Annotations: map[string]string{"annotation1": "value1"},
+			CommonSpec: config.CommonSpec{
+				Labels:      map[string]string{"key1": "value1"},
+				Annotations: map[string]string{"annotation1": "value1"},
+			},
 		},
 	}
 
@@ -115,8 +122,10 @@ func TestUpdateStatus(t *testing.T) {
 			Name:      "test-nodeconfig",
 		},
 		Spec: NodeConfigSpec{
-			Labels:      map[string]string{"key1": "value1"},
-			Annotations: map[string]string{"annotation1": "value1"},
+			CommonSpec: config.CommonSpec{
+				Labels:      map[string]string{"key1": "value1"},
+				Annotations: map[string]string{"annotation1": "value1"},
+			},
 		},
 	}
 
@@ -135,13 +144,15 @@ func TestUpdateStatus(t *testing.T) {
 func TestCleanup(t *testing.T) {
 	nc := &NodeConfig{
 		Spec: NodeConfigSpec{
-			Labels: map[string]string{
-				"key1": "value1",
-				"key2": "value2",
-			},
-			Annotations: map[string]string{
-				"annotation1": "value1",
-				"annotation2": "value2",
+			CommonSpec: config.CommonSpec{
+				Labels: map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				},
+				Annotations: map[string]string{
+					"annotation1": "value1",
+					"annotation2": "value2",
+				},
 			},
 			Taints: []corev1.Taint{
 				{

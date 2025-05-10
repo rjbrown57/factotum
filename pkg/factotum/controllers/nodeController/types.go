@@ -9,8 +9,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	factotum "github.com/rjbrown57/factotum/api/v1alpha1"
-	nodeHandlers "github.com/rjbrown57/factotum/pkg/nodeController/handlers"
+	"github.com/rjbrown57/factotum/api/v1alpha1"
+	fc "github.com/rjbrown57/factotum/pkg/factotum"
+	fcHandlers "github.com/rjbrown57/factotum/pkg/factotum/handlers"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -23,10 +24,10 @@ type NodeController struct {
 	Watcher     watch.Interface
 	MsgChan     chan NcMsg
 	Wg          *sync.WaitGroup
-	NodeConfigs map[string]*factotum.NodeConfig // a cache for updates triggered by the watcher
+	NodeConfigs map[string]*v1alpha1.NodeConfig // a cache for updates triggered by the watcher
 	NcMu        *sync.Mutex                     //NodeConfig Mutex
 	NodeCache   *NodeCache
-	Handlers    []nodeHandlers.Handler
+	Handlers    []fc.Handler
 }
 
 func NewNodeController(k8sClient *kubernetes.Clientset) (*NodeController, error) {
@@ -36,7 +37,7 @@ func NewNodeController(k8sClient *kubernetes.Clientset) (*NodeController, error)
 	// and an empty map of NodeLabels
 	nc := &NodeController{
 		K8sClient:   k8sClient,
-		NodeConfigs: make(map[string]*factotum.NodeConfig),
+		NodeConfigs: make(map[string]*v1alpha1.NodeConfig),
 		MsgChan:     make(chan NcMsg),
 		Wg:          &sync.WaitGroup{},
 		NodeCache: &NodeCache{
@@ -44,9 +45,9 @@ func NewNodeController(k8sClient *kubernetes.Clientset) (*NodeController, error)
 			nodeMu:  &sync.Mutex{},
 		},
 		NcMu: &sync.Mutex{},
-		Handlers: []nodeHandlers.Handler{
-			&nodeHandlers.MetaDataHandler{},
-			&nodeHandlers.TaintHandler{},
+		Handlers: []fc.Handler{
+			&fcHandlers.MetaDataHandler{},
+			&TaintHandler{},
 		},
 	}
 

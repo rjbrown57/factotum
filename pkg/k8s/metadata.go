@@ -1,26 +1,4 @@
-package handlers
-
-import (
-	factotum "github.com/rjbrown57/factotum/api/v1alpha1"
-	v1 "k8s.io/api/core/v1"
-)
-
-type MetaDataHandler struct{}
-
-func (m *MetaDataHandler) Update(node *v1.Node, NodeConfig *factotum.NodeConfig) bool {
-
-	update := false
-
-	if ProcessMetaDataMap(node.Annotations, NodeConfig.GetAnnotationSet()) {
-		update = true
-	}
-
-	if ProcessMetaDataMap(node.Labels, NodeConfig.GetLabelSet()) {
-		update = true
-	}
-
-	return update
-}
+package k8s
 
 // This should probably be moved to k8s package since it's common across
 func ProcessMetaDataMap(currentMap, desiredMap map[string]string) bool {

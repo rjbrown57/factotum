@@ -27,16 +27,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	factotumiov1alpha1 "github.com/rjbrown57/factotum/api/v1alpha1"
+	nc "github.com/rjbrown57/factotum/pkg/factotum/controllers/nodeController"
 	"github.com/rjbrown57/factotum/pkg/k8s"
-	nc "github.com/rjbrown57/factotum/pkg/nodeController"
 )
 
 // NodeConfigReconciler reconciles a NodeConfig object
 type NodeConfigReconciler struct {
 	client.Client
-	Scheme    *runtime.Scheme
-	K8sClient *kubernetes.Clientset
-	// We keep a copy of all existing node labels in the cluster
+	Scheme      *runtime.Scheme
+	K8sClient   *kubernetes.Clientset
 	NodeConfigs map[string]*factotumiov1alpha1.NodeConfig
 	Nc          *nc.NodeController
 }

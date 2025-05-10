@@ -42,14 +42,12 @@ spec:
               annotations:
                 additionalProperties:
                   type: string
-                description: Annotations to Apply to Selected Nodes, If no selector
-                  is provided, all nodes will be selected
+                description: Annotations to Apply to Selected Objects
                 type: object
               labels:
                 additionalProperties:
                   type: string
-                description: Labels to Apply to Selected Nodes, If no selector is
-                  provided, all nodes will be selected
+                description: Labels to Apply to Selected Objects
                 type: object
               selector:
                 description: NodeSelector is a map of node labels to select nodes
@@ -101,17 +99,15 @@ spec:
               appliedAnnotations:
                 additionalProperties:
                   type: string
-                description: Annotations applied to the nodes
+                description: Annotations applied to the objects
                 type: object
               appliedLabels:
                 additionalProperties:
                   type: string
-                description: Labels applied to the nodes
+                description: Labels applied to the objects
                 type: object
               appliedTaints:
-                description: |-
-                  INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-                  Important: Run "make" to regenerate code after modifying this file
+                description: Taints applied to the nodes
                 items:
                   description: |-
                     The node this Taint is attached to has the "effect" on
@@ -141,6 +137,8 @@ spec:
                   type: object
                 type: array
               conditions:
+                description: Conditions is an array of conditions that describe the
+                  status of the object
                 items:
                   description: Condition contains details for one aspect of the current
                     state of this API Resource.

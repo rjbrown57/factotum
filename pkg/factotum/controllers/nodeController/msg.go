@@ -1,14 +1,14 @@
 package nodecontroller
 
 import (
-	factotum "github.com/rjbrown57/factotum/api/v1alpha1"
+	"github.com/rjbrown57/factotum/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 )
 
 type NcMsg struct {
 	Header string
 	Node   *v1.Node
-	Config *factotum.NodeConfig
+	Config *v1alpha1.NodeConfig
 }
 
 func (nc *NodeController) Notify(msg NcMsg) {

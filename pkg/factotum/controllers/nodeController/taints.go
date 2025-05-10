@@ -1,16 +1,29 @@
-package handlers
+package nodecontroller
 
 import (
 	"reflect"
 	"slices"
 
-	factotum "github.com/rjbrown57/factotum/api/v1alpha1"
+	"github.com/rjbrown57/factotum/api/v1alpha1"
+	"github.com/rjbrown57/factotum/pkg/factotum"
 	v1 "k8s.io/api/core/v1"
 )
 
 type TaintHandler struct{}
 
-func (t *TaintHandler) Update(node *v1.Node, NodeConfig *factotum.NodeConfig) bool {
+func (t *TaintHandler) Update(Object any, Config factotum.Config) bool {
+
+	node, ok := Object.(*v1.Node)
+	if !ok {
+		return false
+	}
+
+	// Assert that the Config is of type NodeConfig
+	// so we can access the GetTaintSet method
+	NodeConfig, ok := Config.(*v1alpha1.NodeConfig)
+	if !ok {
+		return false
+	}
 
 	update := false
 

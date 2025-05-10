@@ -20,10 +20,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"slices"
-
+	"github.com/rjbrown57/factotum/pkg/factotum/config"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,12 +30,7 @@ import (
 
 // NodeConfigSpec defines the desired state of NodeConfig
 type NodeConfigSpec struct {
-	// Annotations to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
-	// +optional
-	Annotations map[string]string `json:"annotations,omitempty"`
-	// Labels to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
-	// +optional
-	Labels map[string]string `json:"labels,omitempty"`
+	config.CommonSpec `json:",inline"`
 
 	// Taints to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
 	// +optional
@@ -50,13 +43,8 @@ type NodeConfigSpec struct {
 
 // NodeConfigStatus defines the observed state of NodeConfig
 type NodeConfigStatus struct {
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-	// Labels applied to the nodes
-	AppliedLabels map[string]string `json:"appliedLabels,omitempty"`
-	// Annotations applied to the nodes
-	AppliedAnnotations map[string]string `json:"appliedAnnotations,omitempty"`
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	config.CommonStatus `json:",inline"`
+	// Taints applied to the nodes
 	AppliedTaints []corev1.Taint `json:"appliedTaints,omitempty"`
 }
 
@@ -77,7 +65,7 @@ type NodeConfig struct {
 // NodeConfigList contains a list of NodeConfig
 type NodeConfigList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 	Items           []NodeConfig `json:"items"`
 }
 
@@ -95,12 +83,7 @@ type NodeSelector struct {
 const FinalizerName string = "factotum.io/factotum"
 
 func (nc *NodeConfig) RemoveFinalizer() {
-	for i, finalizer := range nc.GetFinalizers() {
-		if finalizer == FinalizerName {
-			nc.SetFinalizers(slices.Delete(nc.Finalizers, i, i+1))
-			break
-		}
-	}
+	config.RemoveFinalizer(&nc.ObjectMeta)
 }
 
 // Cleanup removes all labels, annotations, and taints from the NodeConfig
@@ -120,16 +103,7 @@ func (nc *NodeConfig) GetLabelSet() map[string]string {
 		nc.Spec.Labels = make(map[string]string)
 	}
 
-	labelSet := nc.Spec.Labels
-
-	// If the label is in the appliedLabels status, but not in the spec, remove it from the labelSet
-	for key := range nc.Status.AppliedLabels {
-		if _, exists := nc.Spec.Labels[key]; !exists {
-			labelSet[key] = ""
-		}
-	}
-
-	return labelSet
+	return config.ProcessMap(nc.Spec.Labels, nc.Status.AppliedLabels)
 }
 
 // These two are basically identical, so we should replace them with a single function
@@ -140,15 +114,7 @@ func (nc *NodeConfig) GetAnnotationSet() map[string]string {
 		nc.Spec.Annotations = make(map[string]string)
 	}
 
-	AnnotationSet := nc.Spec.Annotations
-
-	for key := range nc.Status.AppliedAnnotations {
-		if _, exists := nc.Spec.Annotations[key]; !exists {
-			AnnotationSet[key] = ""
-		}
-	}
-
-	return AnnotationSet
+	return config.ProcessMap(nc.Spec.Annotations, nc.Status.AppliedAnnotations)
 }
 
 func (nc *NodeConfig) ErrorStatus() {
@@ -233,11 +199,11 @@ func (nc *NodeConfig) GetTaintSet() []corev1.Taint {
 }
 
 // Match checks if the node matches all selectors in the NodeConfig
-func (nc *NodeConfig) FindTaint(key string) (v1.Taint, bool) {
+func (nc *NodeConfig) FindTaint(key string) (corev1.Taint, bool) {
 	for _, taint := range nc.Spec.Taints {
 		if taint.Key == key {
 			return taint, true
 		}
 	}
-	return v1.Taint{}, false
+	return corev1.Taint{}, false
 }

@@ -1,9 +1,9 @@
-package handlers
+package nodecontroller
 
 import (
 	"testing"
 
-	factotum "github.com/rjbrown57/factotum/api/v1alpha1"
+	"github.com/rjbrown57/factotum/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -12,7 +12,7 @@ func TestTaintHandler_Update(t *testing.T) {
 	tests := []struct {
 		name           string
 		node           *v1.Node
-		nodeConfig     *factotum.NodeConfig
+		nodeConfig     *v1alpha1.NodeConfig
 		expectedTaints []v1.Taint
 		expectedUpdate bool
 	}{
@@ -23,8 +23,8 @@ func TestTaintHandler_Update(t *testing.T) {
 					Taints: []v1.Taint{},
 				},
 			},
-			nodeConfig: &factotum.NodeConfig{
-				Spec: factotum.NodeConfigSpec{
+			nodeConfig: &v1alpha1.NodeConfig{
+				Spec: v1alpha1.NodeConfigSpec{
 					Taints: []v1.Taint{
 						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
 					},
@@ -44,8 +44,8 @@ func TestTaintHandler_Update(t *testing.T) {
 					},
 				},
 			},
-			nodeConfig: &factotum.NodeConfig{
-				Spec: factotum.NodeConfigSpec{
+			nodeConfig: &v1alpha1.NodeConfig{
+				Spec: v1alpha1.NodeConfigSpec{
 					Taints: []v1.Taint{
 						{Key: "key1", Effect: ""},
 					},
@@ -63,8 +63,8 @@ func TestTaintHandler_Update(t *testing.T) {
 					},
 				},
 			},
-			nodeConfig: &factotum.NodeConfig{
-				Spec: factotum.NodeConfigSpec{
+			nodeConfig: &v1alpha1.NodeConfig{
+				Spec: v1alpha1.NodeConfigSpec{
 					Taints: []v1.Taint{
 						{Key: "key1", Value: "newValue", Effect: v1.TaintEffectNoSchedule},
 					},
@@ -84,8 +84,8 @@ func TestTaintHandler_Update(t *testing.T) {
 					},
 				},
 			},
-			nodeConfig: &factotum.NodeConfig{
-				Spec: factotum.NodeConfigSpec{
+			nodeConfig: &v1alpha1.NodeConfig{
+				Spec: v1alpha1.NodeConfigSpec{
 					Taints: []v1.Taint{
 						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
 					},
@@ -103,8 +103,8 @@ func TestTaintHandler_Update(t *testing.T) {
 					Taints: []v1.Taint{},
 				},
 			},
-			nodeConfig: &factotum.NodeConfig{
-				Spec: factotum.NodeConfigSpec{
+			nodeConfig: &v1alpha1.NodeConfig{
+				Spec: v1alpha1.NodeConfigSpec{
 					Taints: []v1.Taint{
 						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
 						{Key: "key2", Value: "value2", Effect: v1.TaintEffectPreferNoSchedule},
@@ -127,13 +127,13 @@ func TestTaintHandler_Update(t *testing.T) {
 					},
 				},
 			},
-			nodeConfig: &factotum.NodeConfig{
-				Spec: factotum.NodeConfigSpec{
+			nodeConfig: &v1alpha1.NodeConfig{
+				Spec: v1alpha1.NodeConfigSpec{
 					Taints: []v1.Taint{
 						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
 					},
 				},
-				Status: factotum.NodeConfigStatus{
+				Status: v1alpha1.NodeConfigStatus{
 					AppliedTaints: []v1.Taint{
 						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
 						{Key: "key2", Value: "value2", Effect: v1.TaintEffectPreferNoSchedule},

@@ -1,13 +1,13 @@
 package nodecontroller
 
 import (
-	factotum "github.com/rjbrown57/factotum/api/v1alpha1"
+	"github.com/rjbrown57/factotum/api/v1alpha1"
 	"github.com/rjbrown57/factotum/pkg/k8s"
 
 	v1 "k8s.io/api/core/v1"
 )
 
-func (nc *NodeController) Update(node *v1.Node, NodeConfig *factotum.NodeConfig) error {
+func (nc *NodeController) Update(node *v1.Node, NodeConfig *v1alpha1.NodeConfig) error {
 
 	var update bool = false
 	var err error = nil
@@ -66,8 +66,8 @@ func (nc *NodeController) Proccessor() error {
 	return nil
 }
 
-func (nc *NodeController) GetMatchingNodeConfigs(node *v1.Node) []*factotum.NodeConfig {
-	var matchingConfigs []*factotum.NodeConfig
+func (nc *NodeController) GetMatchingNodeConfigs(node *v1.Node) []*v1alpha1.NodeConfig {
+	var matchingConfigs []*v1alpha1.NodeConfig
 
 	nc.NcMu.Lock()
 
@@ -81,7 +81,7 @@ func (nc *NodeController) GetMatchingNodeConfigs(node *v1.Node) []*factotum.Node
 	return matchingConfigs
 }
 
-func (nc *NodeController) GetMatchingNodes(NodeConfig *factotum.NodeConfig) []*v1.Node {
+func (nc *NodeController) GetMatchingNodes(NodeConfig *v1alpha1.NodeConfig) []*v1.Node {
 	var matchingNodes []*v1.Node
 
 	for _, node := range nc.NodeCache.NodeMap {
