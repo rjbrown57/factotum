@@ -32,18 +32,19 @@ import (
 
 // NodeConfigSpec defines the desired state of NodeConfig
 type NodeConfigSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Labels to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
-	Labels map[string]string `json:"labels,omitempty"`
 	// Annotations to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
+	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+	// Labels to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// Taints to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
+	// +optional
 	Taints []corev1.Taint `json:"taints,omitempty"`
 
 	// NodeSelector is a map of node labels to select nodes
+	// +optional
 	Selector NodeSelector `json:"selector"`
 }
 

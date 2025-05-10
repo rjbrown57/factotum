@@ -33,7 +33,6 @@ func (nc *NodeController) Watch(ch <-chan watch.Event) error {
 			}
 
 			if !CompareNodes(node, newNode) {
-				// Notify on any change and let the processor decide if it needs to update
 				nc.Notify(NcMsg{
 					Header: "Watcher",
 					Node:   node,

@@ -94,8 +94,6 @@ spec:
                   - key
                   type: object
                 type: array
-            required:
-            - selector
             type: object
           status:
             description: NodeConfigStatus defines the observed state of NodeConfig
