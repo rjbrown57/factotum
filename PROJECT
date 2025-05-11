@@ -20,4 +20,12 @@ resources:
   kind: NodeConfig
   path: github.com/rjbrown57/factotum/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+  controller: true
+  domain: factotum.io
+  group: factotum.io
+  kind: NamespaceConfig
+  path: github.com/rjbrown57/factotum/api/v1alpha1
+  version: v1alpha1
 version: "3"

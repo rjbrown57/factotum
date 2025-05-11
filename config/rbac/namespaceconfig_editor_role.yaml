@@ -1,16 +1,16 @@
-# permissions for end users to edit nodeconfigs.
+# permissions for end users to edit namespaceconfigs.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: factotum
     app.kubernetes.io/managed-by: kustomize
-  name: nodeconfig-editor-role
+  name: namespaceconfig-editor-role
 rules:
 - apiGroups:
   - factotum.io
   resources:
-  - nodeconfigs
+  - namespaceconfigs
   verbs:
   - create
   - delete
@@ -22,6 +22,6 @@ rules:
 - apiGroups:
   - factotum.io
   resources:
-  - nodeconfigs/status
+  - namespaceconfigs/status
   verbs:
   - get
