@@ -20,22 +20,30 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	factotumiov1alpha1 "github.com/rjbrown57/factotum/api/v1alpha1"
+	controller "github.com/rjbrown57/factotum/pkg/factotum/controllers/namespaceController"
+	"github.com/rjbrown57/factotum/pkg/k8s"
 )
 
 // NamespaceConfigReconciler reconciles a NamespaceConfig object
 type NamespaceConfigReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme          *runtime.Scheme
+	k8sClient       *kubernetes.Clientset
+	NamspaceConfigs map[string]*factotumiov1alpha1.NamespaceConfig
+	Controller      *controller.NamespaceController
 }
 
 // +kubebuilder:rbac:groups=factotum.io,resources=namespaceconfigs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=factotum.io,resources=namespaceconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=factotum.io,resources=namespaceconfigs/finalizers,verbs=update
+
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;update;create;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -56,7 +64,18 @@ func (r *NamespaceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *NamespaceConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&factotumiov1alpha1.NamespaceConfig{}).
 		Complete(r)
+
+	if err != nil {
+		return err
+	}
+
+	r.NamspaceConfigs = make(map[string]*factotumiov1alpha1.NamespaceConfig)
+
+	r.k8sClient = k8s.NewK8sClient()
+	r.Controller, err = controller.NewNamespaceController(r.k8sClient, r.NamspaceConfigs)
+
+	return err
 }

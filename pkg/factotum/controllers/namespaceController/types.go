@@ -30,7 +30,7 @@ type NamespaceController struct {
 	Handlers         []fc.Handler
 }
 
-func NewNamespaceController(k8sClient *kubernetes.Clientset) (*NamespaceController, error) {
+func NewNamespaceController(k8sClient *kubernetes.Clientset, SharedCache map[string]*v1alpha1.NamespaceConfig) (*NamespaceController, error) {
 
 	log.Info("Initializing NamespaceController")
 	// Initialize the NamespaceController with a Kubernetes client
