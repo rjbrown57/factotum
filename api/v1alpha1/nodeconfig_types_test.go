@@ -12,7 +12,7 @@ import (
 func TestRemoveFinalizer(t *testing.T) {
 	nc := &NodeConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Finalizers: []string{FinalizerName, "other-finalizer"},
+			Finalizers: []string{config.FinalizerName, "other-finalizer"},
 		},
 	}
 

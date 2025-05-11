@@ -80,8 +80,6 @@ type NodeSelector struct {
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 }
 
-const FinalizerName string = "factotum.io/factotum"
-
 func (nc *NodeConfig) RemoveFinalizer() {
 	config.RemoveFinalizer(&nc.ObjectMeta)
 }
