@@ -63,3 +63,7 @@ func GetNodes(c *kubernetes.Clientset) (*v1.NodeList, error) {
 func UpdateNode(c *kubernetes.Clientset, node *v1.Node) (*v1.Node, error) {
 	return c.CoreV1().Nodes().Update(context.TODO(), node, metav1.UpdateOptions{})
 }
+
+func UpdateNs(c *kubernetes.Clientset, obj *v1.Namespace) (*v1.Namespace, error) {
+	return c.CoreV1().Namespaces().Update(context.TODO(), obj, metav1.UpdateOptions{})
+}

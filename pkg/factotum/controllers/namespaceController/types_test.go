@@ -7,11 +7,11 @@ import (
 func TestNotifications(t *testing.T) {
 	// Create a new NamespaceController
 	c := &NamespaceController{
-		MsgChan: make(chan NscMsg),
+		MsgChan: make(chan Msg),
 	}
 
 	// Create a new NcMsg
-	msg := NscMsg{
+	msg := Msg{
 		Namespace: nil,
 		Header:    "Test Header",
 	}

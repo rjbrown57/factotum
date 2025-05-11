@@ -20,7 +20,7 @@ func (c *NamespaceController) Update(namespace *v1.Namespace, NamespaceConfig *v
 	}
 
 	if update {
-		_, err = k8s.UpdateNode(c.K8sClient, namespace)
+		_, err = k8s.UpdateNs(c.K8sClient, namespace)
 		if err != nil {
 			DebugLog.Error(err, "Error updating obj", "obj", namespace.Name)
 		} else {
@@ -66,25 +66,25 @@ func (c *NamespaceController) Proccessor() error {
 	return nil
 }
 
-func (nc *NamespaceController) GetMatchingNamespaceConfigs(obj *v1.Namespace) []*v1alpha1.NamespaceConfig {
+func (c *NamespaceController) GetMatchingNamespaceConfigs(obj *v1.Namespace) []*v1alpha1.NamespaceConfig {
 	var matchingConfigs []*v1alpha1.NamespaceConfig
 
-	nc.NcMu.Lock()
+	c.Mu.Lock()
 
-	for _, NamespaceConfig := range nc.NamespaceConfigs {
+	for _, NamespaceConfig := range c.NamespaceConfigs {
 		if NamespaceConfig.Match(obj) {
 			matchingConfigs = append(matchingConfigs, NamespaceConfig)
 		}
 	}
 
-	nc.NcMu.Unlock()
+	c.Mu.Unlock()
 	return matchingConfigs
 }
 
 func (nc *NamespaceController) GetMatchingNodes(NamespaceConfig *v1alpha1.NamespaceConfig) []*v1.Namespace {
 	var matchingNodes []*v1.Namespace
 
-	for _, obj := range nc.NodeCache.NodeMap {
+	for _, obj := range nc.Cache.ObjMap {
 		if NamespaceConfig.Match(obj) {
 			matchingNodes = append(matchingNodes, obj)
 		}

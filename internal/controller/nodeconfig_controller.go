@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	factotumiov1alpha1 "github.com/rjbrown57/factotum/api/v1alpha1"
+	"github.com/rjbrown57/factotum/pkg/factotum/config"
 	nc "github.com/rjbrown57/factotum/pkg/factotum/controllers/nodeController"
 	"github.com/rjbrown57/factotum/pkg/k8s"
 )
@@ -107,8 +108,8 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Add finalizer for this CR
 	// This will prevent the CR from being deleted until we remove the finalizer
-	if !slices.Contains(nodeConfig.GetFinalizers(), factotumiov1alpha1.FinalizerName) {
-		nodeConfig.SetFinalizers(append(nodeConfig.GetFinalizers(), factotumiov1alpha1.FinalizerName))
+	if !slices.Contains(nodeConfig.GetFinalizers(), config.FinalizerName) {
+		nodeConfig.SetFinalizers(append(nodeConfig.GetFinalizers(), config.FinalizerName))
 		if err := r.Update(ctx, nodeConfig); err != nil {
 			controllerLog.Error(err, "Unable to update NodeConfig with finalizer")
 			return ctrl.Result{
