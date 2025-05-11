@@ -16,7 +16,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var log = ctrl.Log.WithName("nc")
+const controllerName = "nodeController"
+
+var log = ctrl.Log.WithName(controllerName)
 var DebugLog = log.V(1)
 
 type NodeController struct {
@@ -32,7 +34,7 @@ type NodeController struct {
 
 func NewNodeController(k8sClient *kubernetes.Clientset) (*NodeController, error) {
 
-	log.Info("Initializing NodeController")
+	log.Info("Initializing", "Controller", controllerName)
 	// Initialize the NodeController with a Kubernetes client
 	// and an empty map of NodeLabels
 	nc := &NodeController{

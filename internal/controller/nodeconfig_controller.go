@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	factotumiov1alpha1 "github.com/rjbrown57/factotum/api/v1alpha1"
+	"github.com/rjbrown57/factotum/api/v1alpha1"
 	"github.com/rjbrown57/factotum/pkg/factotum/config"
 	nc "github.com/rjbrown57/factotum/pkg/factotum/controllers/nodeController"
 	"github.com/rjbrown57/factotum/pkg/k8s"
@@ -37,7 +37,7 @@ type NodeConfigReconciler struct {
 	client.Client
 	Scheme      *runtime.Scheme
 	K8sClient   *kubernetes.Clientset
-	NodeConfigs map[string]*factotumiov1alpha1.NodeConfig
+	NodeConfigs map[string]*v1alpha1.NodeConfig
 	Nc          *nc.NodeController
 }
 
@@ -60,7 +60,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	controllerLog.Info("Reconciling NodeConfig", "name", req.NamespacedName.String())
 
 	// Fetch the NodeConfig instance
-	nodeConfig := &factotumiov1alpha1.NodeConfig{}
+	nodeConfig := &v1alpha1.NodeConfig{}
 
 	if err := r.Get(ctx, req.NamespacedName, nodeConfig); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -150,14 +150,14 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // SetupWithManager sets up the controller with the Manager.
 func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewControllerManagedBy(mgr).
-		For(&factotumiov1alpha1.NodeConfig{}).
+		For(&v1alpha1.NodeConfig{}).
 		Complete(r)
 
 	if err != nil {
 		return err
 	}
 
-	r.NodeConfigs = make(map[string]*factotumiov1alpha1.NodeConfig)
+	r.NodeConfigs = make(map[string]*v1alpha1.NodeConfig)
 
 	r.K8sClient = k8s.NewK8sClient()
 	r.Nc, err = nc.NewNodeController(r.K8sClient)
