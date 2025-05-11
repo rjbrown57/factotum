@@ -45,7 +45,8 @@ type NodeConfigSpec struct {
 type NodeConfigStatus struct {
 	config.CommonStatus `json:",inline"`
 	// Taints applied to the nodes
-	AppliedTaints []corev1.Taint `json:"appliedTaints,omitempty"`
+	AppliedTaints   []corev1.Taint `json:"appliedTaints,omitempty"`
+	AppliedSelector NodeSelector   `json:"appliedSelector"`
 }
 
 // +kubebuilder:object:root=true
@@ -119,6 +120,7 @@ func (nc *NodeConfig) ErrorStatus() {
 	nc.Status.AppliedLabels = nc.Spec.Labels
 	nc.Status.AppliedAnnotations = nc.Spec.Annotations
 	nc.Status.AppliedTaints = nc.Spec.Taints
+	nc.Status.AppliedSelector = nc.Spec.Selector
 	nc.Status.Conditions = []metav1.Condition{
 		{
 			Type:               "Applied",
@@ -135,6 +137,7 @@ func (nc *NodeConfig) UpdateStatus() {
 	nc.Status.AppliedLabels = nc.Spec.Labels
 	nc.Status.AppliedAnnotations = nc.Spec.Annotations
 	nc.Status.AppliedTaints = nc.Spec.Taints
+	nc.Status.AppliedSelector = nc.Spec.Selector
 	nc.Status.Conditions = []metav1.Condition{
 		{
 			Type:               "Applied",

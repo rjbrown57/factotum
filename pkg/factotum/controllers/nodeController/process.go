@@ -37,7 +37,7 @@ func (nc *NodeController) Proccessor() error {
 
 	for msg := range nc.MsgChan {
 
-		// If msg node is nil, we apply to all nodes, This indicates the msg is from the reconciler and we can pass the config
+		// If msg node is nil, we apply to selected nodes
 		switch {
 		case msg.Node == nil:
 			for _, node := range nc.GetMatchingNodes(msg.Config) {
@@ -84,7 +84,7 @@ func (nc *NodeController) GetMatchingNodeConfigs(node *v1.Node) []*v1alpha1.Node
 func (nc *NodeController) GetMatchingNodes(NodeConfig *v1alpha1.NodeConfig) []*v1.Node {
 	var matchingNodes []*v1.Node
 
-	for _, node := range nc.NodeCache.NodeMap {
+	for _, node := range nc.NodeCache.ObjMap {
 		if NodeConfig.Match(node) {
 			matchingNodes = append(matchingNodes, node)
 		}

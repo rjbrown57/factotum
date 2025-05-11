@@ -16,7 +16,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var log = ctrl.Log.WithName("nc")
+const controllerName = "nodeController"
+
+var log = ctrl.Log.WithName(controllerName)
 var DebugLog = log.V(1)
 
 type NodeController struct {
@@ -26,13 +28,13 @@ type NodeController struct {
 	Wg          *sync.WaitGroup
 	NodeConfigs map[string]*v1alpha1.NodeConfig // a cache for updates triggered by the watcher
 	NcMu        *sync.Mutex                     //NodeConfig Mutex
-	NodeCache   *NodeCache
+	NodeCache   *Cache
 	Handlers    []fc.Handler
 }
 
 func NewNodeController(k8sClient *kubernetes.Clientset) (*NodeController, error) {
 
-	log.Info("Initializing NodeController")
+	log.Info("Initializing", "Controller", controllerName)
 	// Initialize the NodeController with a Kubernetes client
 	// and an empty map of NodeLabels
 	nc := &NodeController{
@@ -40,9 +42,9 @@ func NewNodeController(k8sClient *kubernetes.Clientset) (*NodeController, error)
 		NodeConfigs: make(map[string]*v1alpha1.NodeConfig),
 		MsgChan:     make(chan NcMsg),
 		Wg:          &sync.WaitGroup{},
-		NodeCache: &NodeCache{
-			NodeMap: make(map[string]*v1.Node),
-			nodeMu:  &sync.Mutex{},
+		NodeCache: &Cache{
+			ObjMap: make(map[string]*v1.Node),
+			Mu:     &sync.Mutex{},
 		},
 		NcMu: &sync.Mutex{},
 		Handlers: []fc.Handler{
