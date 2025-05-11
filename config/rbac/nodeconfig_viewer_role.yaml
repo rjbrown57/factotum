@@ -8,7 +8,7 @@ metadata:
   name: nodeconfig-viewer-role
 rules:
 - apiGroups:
-  - factotum.io.factotum.io
+  - factotum.io
   resources:
   - nodeconfigs
   verbs:
@@ -16,7 +16,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - factotum.io.factotum.io
+  - factotum.io
   resources:
   - nodeconfigs/status
   verbs:

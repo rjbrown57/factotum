@@ -7,6 +7,18 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - namespaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - nodes
   verbs:
   - get
@@ -16,6 +28,7 @@ rules:
 - apiGroups:
   - factotum.io
   resources:
+  - namespaceconfigs
   - nodeconfigs
   verbs:
   - create
@@ -28,12 +41,14 @@ rules:
 - apiGroups:
   - factotum.io
   resources:
+  - namespaceconfigs/finalizers
   - nodeconfigs/finalizers
   verbs:
   - update
 - apiGroups:
   - factotum.io
   resources:
+  - namespaceconfigs/status
   - nodeconfigs/status
   verbs:
   - get
