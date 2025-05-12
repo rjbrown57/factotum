@@ -40,7 +40,7 @@ func (c *NamespaceController) Proccessor() error {
 		// If msg obj is nil, we apply to all objs, This indicates the msg is from the reconciler and we can pass the config
 		switch {
 		case msg.Namespace == nil:
-			for _, obj := range c.GetMatchingNodes(msg.Config) {
+			for _, obj := range c.GetMatchingNamespaces(msg.Config) {
 				log.Info("Processing obj", "obj", obj.Name)
 				if err := c.Update(obj, msg.Config); err != nil {
 					log.Error(err, "Error processing obj", "obj", obj.Name)
@@ -81,14 +81,14 @@ func (c *NamespaceController) GetMatchingNamespaceConfigs(obj *v1.Namespace) []*
 	return matchingConfigs
 }
 
-func (nc *NamespaceController) GetMatchingNodes(NamespaceConfig *v1alpha1.NamespaceConfig) []*v1.Namespace {
-	var matchingNodes []*v1.Namespace
+func (nc *NamespaceController) GetMatchingNamespaces(NamespaceConfig *v1alpha1.NamespaceConfig) []*v1.Namespace {
+	var matchingNamespaces []*v1.Namespace
 
 	for _, obj := range nc.Cache.ObjMap {
 		if NamespaceConfig.Match(obj) {
-			matchingNodes = append(matchingNodes, obj)
+			matchingNamespaces = append(matchingNamespaces, obj)
 		}
 	}
 
-	return matchingNodes
+	return matchingNamespaces
 }

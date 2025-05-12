@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"slices"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -25,7 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	factotumiov1alpha1 "github.com/rjbrown57/factotum/api/v1alpha1"
+	"github.com/rjbrown57/factotum/api/v1alpha1"
+	"github.com/rjbrown57/factotum/pkg/factotum/config"
 	controller "github.com/rjbrown57/factotum/pkg/factotum/controllers/namespaceController"
 	"github.com/rjbrown57/factotum/pkg/k8s"
 )
@@ -35,7 +37,7 @@ type NamespaceConfigReconciler struct {
 	client.Client
 	Scheme          *runtime.Scheme
 	k8sClient       *kubernetes.Clientset
-	NamspaceConfigs map[string]*factotumiov1alpha1.NamespaceConfig
+	NamspaceConfigs map[string]*v1alpha1.NamespaceConfig
 	Controller      *controller.NamespaceController
 }
 
@@ -57,22 +59,110 @@ type NamespaceConfigReconciler struct {
 func (r *NamespaceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	controllerLog := log.FromContext(ctx)
+	DebugLog := controllerLog.V(1)
 
-	return ctrl.Result{}, nil
+	controllerLog.Info("Reconciling NamespaceConfig", "name", req.NamespacedName.String())
+
+	// Fetch the NamespaceConfig instance
+	fConfig := &v1alpha1.NamespaceConfig{}
+
+	if err := r.Get(ctx, req.NamespacedName, fConfig); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// Check if the NamespaceConfig is being deleted
+	if !fConfig.DeletionTimestamp.IsZero() {
+		// Handle deletion logic
+		DebugLog.Info("NamespaceConfig is being deleted", "name", req.NamespacedName.Name)
+
+		// Cleanup the NamespaceConfig instance
+		// This will remove all labels, annotations, and taints from the NamespaceConfig
+		// When passed to NodeUpdate, it will remove all labels, annotations, and taints from the node
+		fConfig.Cleanup()
+		r.Controller.Mu.Lock()
+		r.NamspaceConfigs[req.NamespacedName.String()] = fConfig
+		r.Controller.Mu.Unlock()
+
+		// Cleanup up the NamespaceConfig instance
+		r.Controller.Notify(controller.Msg{
+			Header:    "Cleanup",
+			Namespace: nil,
+			Config:    fConfig.DeepCopy(),
+		})
+
+		// Wait for the NodeController to finish processing
+		r.Controller.Wg.Wait()
+
+		r.Controller.Mu.Lock()
+		delete(r.NamspaceConfigs, req.NamespacedName.String())
+		r.Controller.Mu.Unlock()
+
+		// Remove the finalizer from the NamespaceConfig
+		fConfig.RemoveFinalizer()
+		if err := r.Update(ctx, fConfig); err != nil {
+			controllerLog.Error(err, "Unable to update NamespaceConfig with finalizer")
+			return ctrl.Result{
+				Requeue: true,
+			}, err
+		}
+
+		controllerLog.Info("Removed finalizer from NamespaceConfig", "name", req.NamespacedName.String())
+		return ctrl.Result{}, nil
+	}
+
+	// Add finalizer for this CR
+	// This will prevent the CR from being deleted until we remove the finalizer
+	if !slices.Contains(fConfig.GetFinalizers(), config.FinalizerName) {
+		fConfig.SetFinalizers(append(fConfig.GetFinalizers(), config.FinalizerName))
+		if err := r.Update(ctx, fConfig); err != nil {
+			controllerLog.Error(err, "Unable to update NamespaceConfig with finalizer")
+			return ctrl.Result{
+				Requeue: true,
+			}, err
+		}
+		controllerLog.Info("Added finalizer to NamespaceConfig", "name", req.NamespacedName.Name)
+	}
+
+	// The NamespaceConfig instance is being created or updated
+	// We need to update the NamespaceConfig instance in the map
+	DebugLog.Info("NamespaceConfig found, updating map", "name", req.NamespacedName, "labels", fConfig.Spec.Labels)
+	r.Controller.Mu.Lock()
+	r.NamspaceConfigs[req.NamespacedName.String()] = fConfig
+	r.Controller.Mu.Unlock()
+
+	// Send a message to the NodeController to process the config
+	DebugLog.Info("Sending message to NodeController to apply configs", "NamespaceConfigs", len(r.NamspaceConfigs))
+	r.Controller.Notify(controller.Msg{
+		Header:    "Reconciler",
+		Namespace: nil,
+		Config:    fConfig,
+	})
+
+	// Wait for the NodeController to finish processing
+	r.Controller.Wg.Wait()
+
+	controllerLog.Info("Reconciling NamespaceConfig complete", "name", req.NamespacedName.String())
+
+	// Update the status of the NamespaceConfig
+	r.Controller.Mu.Lock()
+	fConfig.UpdateStatus()
+	r.Controller.Mu.Unlock()
+
+	return ctrl.Result{}, r.Status().Update(ctx, fConfig)
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *NamespaceConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewControllerManagedBy(mgr).
-		For(&factotumiov1alpha1.NamespaceConfig{}).
+		For(&v1alpha1.NamespaceConfig{}).
 		Complete(r)
 
 	if err != nil {
 		return err
 	}
 
-	r.NamspaceConfigs = make(map[string]*factotumiov1alpha1.NamespaceConfig)
+	r.NamspaceConfigs = make(map[string]*v1alpha1.NamespaceConfig)
 
 	r.k8sClient = k8s.NewK8sClient()
 	r.Controller, err = controller.NewNamespaceController(r.k8sClient, r.NamspaceConfigs)

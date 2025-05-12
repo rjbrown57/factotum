@@ -16,7 +16,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var log = ctrl.Log.WithName("nc")
+const controllerName = "namespacecontroller"
+
+var log = ctrl.Log.WithName(controllerName)
 var DebugLog = log.V(1)
 
 type NamespaceController struct {
@@ -32,7 +34,8 @@ type NamespaceController struct {
 
 func NewNamespaceController(k8sClient *kubernetes.Clientset, SharedCache map[string]*v1alpha1.NamespaceConfig) (*NamespaceController, error) {
 
-	log.Info("Initializing NamespaceController")
+	log.Info("Initializing", "Controller", controllerName)
+
 	// Initialize the NamespaceController with a Kubernetes client
 	// and an empty map of NodeLabels
 	c := &NamespaceController{

@@ -4,6 +4,16 @@ package k8s
 func ProcessMetaDataMap(currentMap, desiredMap map[string]string) bool {
 	update := false
 
+	// Check if the currentMap is nil, if so, initialize it
+	if currentMap == nil {
+		currentMap = make(map[string]string)
+	}
+
+	// Check if the desiredMap is nil, if so, initialize it
+	if desiredMap == nil {
+		desiredMap = make(map[string]string)
+	}
+
 	for key, value := range desiredMap {
 		switch currentValue, exists := currentMap[key]; {
 		// Label is empty in config, remove it from node
