@@ -9,23 +9,20 @@ import (
 
 func (nc *NodeController) Update(node *v1.Node, NodeConfig *v1alpha1.NodeConfig) error {
 
-	var update bool = false
 	var err error = nil
+
+	newNode := node.DeepCopy()
 
 	for _, h := range nc.Handlers {
 		// Call the handler functions
-		if h.Update(node, NodeConfig) {
-			update = true
-		}
+		_ = h.Update(newNode, NodeConfig)
 	}
 
-	if update {
-		_, err = k8s.UpdateNode(nc.K8sClient, node)
-		if err != nil {
-			DebugLog.Error(err, "Error updating node", "node", node.Name)
-		} else {
-			DebugLog.Info("Updated node", "node", node.Name)
-		}
+	_, err = k8s.StrategicMerge(nc.K8sClient, node, newNode)
+	if err != nil {
+		DebugLog.Error(err, "Error updating node", "node", node.Name)
+	} else {
+		DebugLog.Info("Updated node", "node", node.Name)
 	}
 
 	return err

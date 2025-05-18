@@ -9,23 +9,20 @@ import (
 
 func (c *NamespaceController) Update(namespace *v1.Namespace, NamespaceConfig *v1alpha1.NamespaceConfig) error {
 
-	var update bool = false
 	var err error = nil
+
+	newNs := namespace.DeepCopy()
 
 	for _, h := range c.Handlers {
 		// Call the handler functions
-		if h.Update(namespace, NamespaceConfig) {
-			update = true
-		}
+		_ = h.Update(newNs, NamespaceConfig)
 	}
 
-	if update {
-		_, err = k8s.UpdateNs(c.K8sClient, namespace)
-		if err != nil {
-			DebugLog.Error(err, "Error updating obj", "obj", namespace.Name)
-		} else {
-			DebugLog.Info("Updated obj", "obj", namespace.Name)
-		}
+	_, err = k8s.StrategicMerge(c.K8sClient, namespace, newNs)
+	if err != nil {
+		DebugLog.Error(err, "Error updating obj", "obj", namespace.Name)
+	} else {
+		DebugLog.Info("Updated obj", "obj", namespace.Name)
 	}
 
 	return err

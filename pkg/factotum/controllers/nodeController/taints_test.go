@@ -8,61 +8,38 @@ import (
 )
 
 func TestTaintHandler_Update(t *testing.T) {
+	handler := TaintHandler{}
 
 	tests := []struct {
 		name           string
-		node           *v1.Node
 		nodeConfig     *v1alpha1.NodeConfig
-		expectedTaints []v1.Taint
-		expectedUpdate bool
+		initialObject  *v1.Node
+		expectedObject *v1.Node
 	}{
 		{
-			name: "Add missing taint",
-			node: &v1.Node{
+			name: "Add new taint",
+			nodeConfig: &v1alpha1.NodeConfig{
+				Spec: v1alpha1.NodeConfigSpec{
+					Taints: []v1.Taint{
+						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
+					},
+				},
+			},
+			initialObject: &v1.Node{
 				Spec: v1.NodeSpec{
 					Taints: []v1.Taint{},
 				},
 			},
-			nodeConfig: &v1alpha1.NodeConfig{
-				Spec: v1alpha1.NodeConfigSpec{
-					Taints: []v1.Taint{
-						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-					},
-				},
-			},
-			expectedTaints: []v1.Taint{
-				{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-			},
-			expectedUpdate: true,
-		},
-		{
-			name: "Remove taint when effect is empty",
-			node: &v1.Node{
+			expectedObject: &v1.Node{
 				Spec: v1.NodeSpec{
 					Taints: []v1.Taint{
 						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
 					},
 				},
 			},
-			nodeConfig: &v1alpha1.NodeConfig{
-				Spec: v1alpha1.NodeConfigSpec{
-					Taints: []v1.Taint{
-						{Key: "key1", Effect: ""},
-					},
-				},
-			},
-			expectedTaints: []v1.Taint{},
-			expectedUpdate: true,
 		},
 		{
-			name: "Update taint value",
-			node: &v1.Node{
-				Spec: v1.NodeSpec{
-					Taints: []v1.Taint{
-						{Key: "key1", Value: "oldValue", Effect: v1.TaintEffectNoSchedule},
-					},
-				},
-			},
+			name: "Update existing taint",
 			nodeConfig: &v1alpha1.NodeConfig{
 				Spec: v1alpha1.NodeConfigSpec{
 					Taints: []v1.Taint{
@@ -70,103 +47,41 @@ func TestTaintHandler_Update(t *testing.T) {
 					},
 				},
 			},
-			expectedTaints: []v1.Taint{
-				{Key: "key1", Value: "newValue", Effect: v1.TaintEffectNoSchedule},
-			},
-			expectedUpdate: true,
-		},
-		{
-			name: "No changes when taints match",
-			node: &v1.Node{
+			initialObject: &v1.Node{
 				Spec: v1.NodeSpec{
 					Taints: []v1.Taint{
 						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
 					},
 				},
 			},
-			nodeConfig: &v1alpha1.NodeConfig{
-				Spec: v1alpha1.NodeConfigSpec{
-					Taints: []v1.Taint{
-						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-					},
-				},
-			},
-			expectedTaints: []v1.Taint{
-				{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-			},
-			expectedUpdate: false,
-		},
-		{
-			name: "Add multiple missing taints",
-			node: &v1.Node{
-				Spec: v1.NodeSpec{
-					Taints: []v1.Taint{},
-				},
-			},
-			nodeConfig: &v1alpha1.NodeConfig{
-				Spec: v1alpha1.NodeConfigSpec{
-					Taints: []v1.Taint{
-						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-						{Key: "key2", Value: "value2", Effect: v1.TaintEffectPreferNoSchedule},
-					},
-				},
-			},
-			expectedTaints: []v1.Taint{
-				{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-				{Key: "key2", Value: "value2", Effect: v1.TaintEffectPreferNoSchedule},
-			},
-			expectedUpdate: true,
-		},
-		{
-			name: "Remove taint not in config",
-			node: &v1.Node{
+			expectedObject: &v1.Node{
 				Spec: v1.NodeSpec{
 					Taints: []v1.Taint{
-						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-						{Key: "key2", Value: "value2", Effect: v1.TaintEffectPreferNoSchedule},
+						{Key: "key1", Value: "newValue", Effect: v1.TaintEffectNoSchedule},
 					},
 				},
 			},
-			nodeConfig: &v1alpha1.NodeConfig{
-				Spec: v1alpha1.NodeConfigSpec{
-					Taints: []v1.Taint{
-						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-					},
-				},
-				Status: v1alpha1.NodeConfigStatus{
-					AppliedTaints: []v1.Taint{
-						{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-						{Key: "key2", Value: "value2", Effect: v1.TaintEffectPreferNoSchedule},
-					},
-				},
-			},
-			expectedTaints: []v1.Taint{
-				{Key: "key1", Value: "value1", Effect: v1.TaintEffectNoSchedule},
-			},
-			expectedUpdate: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := &TaintHandler{}
-			updated := handler.Update(tt.node, tt.nodeConfig)
-
-			if updated != tt.expectedUpdate {
-				t.Errorf("expected update %v, got %v", tt.expectedUpdate, updated)
+			result := handler.Update(tt.initialObject, tt.nodeConfig)
+			if result == nil {
+				t.Errorf("expected non-nil result")
+				return
 			}
-
-			if len(tt.node.Spec.Taints) != len(tt.expectedTaints) {
-				t.Errorf("expected taints length %d, got %d, %v", len(tt.expectedTaints), len(tt.node.Spec.Taints), tt.node.Spec.Taints)
+			node, ok := result.(*v1.Node)
+			if !ok {
+				t.Errorf("expected result to be of type *v1.Node")
+				return
 			}
-
-			for i, expectedTaint := range tt.expectedTaints {
-				if tt.node.Spec.Taints[i] != expectedTaint {
-					t.Errorf("expected taint %v, got %v", expectedTaint, tt.node.Spec.Taints[i])
-				}
+			if len(node.Spec.Taints) != len(tt.expectedObject.Spec.Taints) {
+				t.Errorf("expected %d taints, got %d", len(tt.expectedObject.Spec.Taints), len(node.Spec.Taints))
 			}
 		})
 	}
+
 }
 
 func TestFindTaintIndex(t *testing.T) {

@@ -45,7 +45,7 @@ type NodeConfigReconciler struct {
 // +kubebuilder:rbac:groups=factotum.io,resources=nodeconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=factotum.io,resources=nodeconfigs/finalizers,verbs=update
 
-// +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;update
+// +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
