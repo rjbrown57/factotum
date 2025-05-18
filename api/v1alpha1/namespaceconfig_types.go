@@ -113,6 +113,10 @@ func (c *NamespaceConfig) ErrorStatus() {
 }
 
 func (c *NamespaceConfig) UpdateStatus() {
+
+	// Clean will remove all empty labels and annotations from the NamespaceConfig
+	c.Spec.Clean()
+
 	c.Status.AppliedLabels = c.Spec.Labels
 	c.Status.AppliedAnnotations = c.Spec.Annotations
 	c.Status.Conditions = []metav1.Condition{

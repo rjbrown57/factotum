@@ -134,6 +134,10 @@ func (nc *NodeConfig) ErrorStatus() {
 }
 
 func (nc *NodeConfig) UpdateStatus() {
+
+	// Clean will remove all empty labels and annotations from the NodeConfig
+	nc.Spec.Clean()
+
 	nc.Status.AppliedLabels = nc.Spec.Labels
 	nc.Status.AppliedAnnotations = nc.Spec.Annotations
 	nc.Status.AppliedTaints = nc.Spec.Taints
