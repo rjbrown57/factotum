@@ -46,3 +46,11 @@ sequenceDiagram
   NodeController ->> v1.Node: Filter Configs and apply
   NodeController ->> NodeController: Update Cache  
 ```
+
+## Handling Selector Change
+
+1. Get ConfigChange event
+2. Detect a selector change
+3. calculate the diff set
+  3a. nodes previously selected that are not in the new set must be cleaned
+4. apply to new nodes

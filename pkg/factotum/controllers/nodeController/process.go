@@ -34,15 +34,33 @@ func (nc *NodeController) Proccessor() error {
 
 	for msg := range nc.MsgChan {
 
-		// If msg node is nil, we apply to selected nodes
+		// If msg node is nil, this indicates a Config Event
+		// Process all matching nodes
 		switch {
 		case msg.Node == nil:
+
+			if msg.Config.DetectChange() {
+				log.Info("Selector has changed, processing all nodes", "config", msg.Config.Spec.Selector)
+				// Make a deep copy of the config to avoid modifying the original
+				c := msg.Config.DeepCopy()
+				// Call cleanup to remove any config from the no longer selected nodes
+				c.Cleanup()
+
+				for _, node := range nc.GetNodeDiffSet(c.Status.AppliedSelector, c.Spec.Selector) {
+					log.Info("Processing node", "node", node.Name)
+					if err := nc.Update(node, c); err != nil {
+						log.Error(err, "Error processing node", "node", node.Name)
+					}
+				}
+			}
+
 			for _, node := range nc.GetMatchingNodes(msg.Config) {
 				log.Info("Processing node", "node", node.Name)
 				if err := nc.Update(node, msg.Config); err != nil {
 					log.Error(err, "Error processing node", "node", node.Name)
 				}
 			}
+
 		// Update to a specific node
 		// If msg node is not nil, we apply to the specific node, This indicates the msg is from the watcher so we need to use our cache
 		case msg.Node != nil:
@@ -78,14 +96,43 @@ func (nc *NodeController) GetMatchingNodeConfigs(node *v1.Node) []*v1alpha1.Node
 	return matchingConfigs
 }
 
+// GetNodeSet returns the nodes matching the selectors
 func (nc *NodeController) GetMatchingNodes(NodeConfig *v1alpha1.NodeConfig) []*v1.Node {
 	var matchingNodes []*v1.Node
 
 	for _, node := range nc.NodeCache.ObjMap {
-		if NodeConfig.Match(node) {
+		if matchNode(node, NodeConfig.Spec.Selector) {
 			matchingNodes = append(matchingNodes, node)
 		}
 	}
 
 	return matchingNodes
+}
+
+// GetNodeSet returns the nodes No longer matching the selector, but matched the previous selector
+func (nc *NodeController) GetNodeDiffSet(PreviousSelector, CurrentSelector v1alpha1.NodeSelector) []*v1.Node {
+	var matchingNodes []*v1.Node
+
+	for _, node := range nc.NodeCache.ObjMap {
+		if matchNode(node, PreviousSelector) && !matchNode(node, CurrentSelector) {
+			matchingNodes = append(matchingNodes, node)
+		}
+	}
+
+	return matchingNodes
+}
+
+// matchNode checks if a node matches the given selector
+func matchNode(node *v1.Node, selector v1alpha1.NodeSelector) bool {
+	if selector.NodeSelector == nil {
+		return true
+	}
+
+	for key, value := range selector.NodeSelector {
+		if nodeValue, exists := node.Labels[key]; !exists || nodeValue != value {
+			return false
+		}
+	}
+
+	return true
 }

@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/rjbrown57/factotum/pkg/factotum/config"
@@ -79,6 +80,13 @@ type NodeSelector struct {
 	// Selector can be provided a plain string or a regex.
 	// If no selector is provided, all nodes will be selected
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+}
+
+func (nc *NodeConfig) DetectChange() bool {
+	if !reflect.DeepEqual(nc.Status.AppliedSelector, nc.Spec.Selector) {
+		return true
+	}
+	return false
 }
 
 func (nc *NodeConfig) RemoveFinalizer() {
@@ -155,6 +163,7 @@ func (nc *NodeConfig) UpdateStatus() {
 }
 
 // Match checks if the node matches all selectors in the NodeConfig
+// This is used to determine if the NodeConfig should be applied to the node when triggered by a watcher event
 func (nc *NodeConfig) Match(node *corev1.Node) bool {
 	if nc.Spec.Selector.NodeSelector == nil {
 		return true
