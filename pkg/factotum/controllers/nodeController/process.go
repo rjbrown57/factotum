@@ -1,6 +1,8 @@
 package nodecontroller
 
 import (
+	"reflect"
+
 	"github.com/rjbrown57/factotum/api/v1alpha1"
 	"github.com/rjbrown57/factotum/pkg/k8s"
 
@@ -34,15 +36,47 @@ func (nc *NodeController) Proccessor() error {
 
 	for msg := range nc.MsgChan {
 
-		// If msg node is nil, we apply to selected nodes
+		// If msg node is nil, this indicates a Config Event
+		// Process all matching nodes
 		switch {
 		case msg.Node == nil:
-			for _, node := range nc.GetMatchingNodes(msg.Config) {
-				log.Info("Processing node", "node", node.Name)
-				if err := nc.Update(node, msg.Config); err != nil {
-					log.Error(err, "Error processing node", "node", node.Name)
+
+			// If AppliedSelector is different we need to clean the diff between applied and current
+			if !reflect.DeepEqual(msg.Config.Status.AppliedSelector, msg.Config.Spec.Selector) {
+				log.Info("Selector Change detected", "nodeConfig", msg.Config.Name)
+
+				// This will work but create a bunch of cycles
+
+				// Calculate the diff set
+				// Make a copy and update the selector to our "known" selector
+				// Same logic needs to be done for the labelSet / annotationSet / taints
+				diffSet := msg.Config.DeepCopy()
+				diffSet.Spec.Selector = msg.Config.Status.AppliedSelector
+
+				//oldNodes := nc.GetMatchingNodes(diffSet)
+				//newNodes := nc.GetMatchingNodes(msg.Config)
+
+				// compare them and find the diff
+				nodes := []*v1.Node{}
+
+				for _, node := range nodes {
+					if err := nc.Update(node, msg.Config); err != nil {
+					}
+
+					// now that we have the diff range
+
+					// if there are any presetn in the applied set that are not in the current set
+					// we need to clean them
+				}
+
+				for _, node := range nc.GetMatchingNodes(msg.Config) {
+					log.Info("Processing node", "node", node.Name)
+					if err := nc.Update(node, msg.Config); err != nil {
+						log.Error(err, "Error processing node", "node", node.Name)
+					}
 				}
 			}
+
 		// Update to a specific node
 		// If msg node is not nil, we apply to the specific node, This indicates the msg is from the watcher so we need to use our cache
 		case msg.Node != nil:
