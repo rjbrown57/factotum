@@ -322,3 +322,15 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+kind: kind-create kind-apply
+
+kind-create:
+	kind create cluster --config kind.config
+
+kind-apply:
+	kubectl apply -f config/crd/bases/
+	kubectl apply -f example/
+
+kind-delete:
+	kind delete cluster
