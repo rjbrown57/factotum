@@ -1,0 +1,26 @@
+# permissions for end users to edit nodeconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    {{- include "factotum.labels" . | nindent 4 }}
+  name: nodeconfig-editor-role
+rules:
+- apiGroups:
+  - factotum.io
+  resources:
+  - nodeconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - factotum.io
+  resources:
+  - nodeconfigs/status
+  verbs:
+  - get
