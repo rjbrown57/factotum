@@ -322,3 +322,17 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+kind: kind-create crd-apply helm-install
+
+kind-create:
+	kind create cluster --config kind.config
+
+crd-apply:
+	kubectl apply -f deploy/crds/
+
+helm-install: 
+	helm upgrade --install factotum deploy/chart/factotum -n factoum --create-namespace
+
+kind-delete:
+	kind delete cluster

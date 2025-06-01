@@ -18,12 +18,11 @@ package v1alpha1
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 
-	"slices"
-
+	"github.com/rjbrown57/factotum/pkg/factotum/config"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,31 +31,23 @@ import (
 
 // NodeConfigSpec defines the desired state of NodeConfig
 type NodeConfigSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Labels to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
-	Labels map[string]string `json:"labels,omitempty"`
-	// Annotations to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
-	Annotations map[string]string `json:"annotations,omitempty"`
+	config.CommonSpec `json:",inline"`
 
 	// Taints to Apply to Selected Nodes, If no selector is provided, all nodes will be selected
+	// +optional
 	Taints []corev1.Taint `json:"taints,omitempty"`
 
 	// NodeSelector is a map of node labels to select nodes
+	// +optional
 	Selector NodeSelector `json:"selector"`
 }
 
 // NodeConfigStatus defines the observed state of NodeConfig
 type NodeConfigStatus struct {
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-	// Labels applied to the nodes
-	AppliedLabels map[string]string `json:"appliedLabels,omitempty"`
-	// Annotations applied to the nodes
-	AppliedAnnotations map[string]string `json:"appliedAnnotations,omitempty"`
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	AppliedTaints []corev1.Taint `json:"appliedTaints,omitempty"`
+	config.CommonStatus `json:",inline"`
+	// Taints applied to the nodes
+	AppliedTaints   []corev1.Taint `json:"appliedTaints,omitempty"`
+	AppliedSelector NodeSelector   `json:"appliedSelector"`
 }
 
 // +kubebuilder:object:root=true
@@ -76,7 +67,7 @@ type NodeConfig struct {
 // NodeConfigList contains a list of NodeConfig
 type NodeConfigList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 	Items           []NodeConfig `json:"items"`
 }
 
@@ -91,15 +82,15 @@ type NodeSelector struct {
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 }
 
-const FinalizerName string = "factotum.io/factotum"
+func (nc *NodeConfig) DetectChange() bool {
+	if !reflect.DeepEqual(nc.Status.AppliedSelector, nc.Spec.Selector) {
+		return true
+	}
+	return false
+}
 
 func (nc *NodeConfig) RemoveFinalizer() {
-	for i, finalizer := range nc.GetFinalizers() {
-		if finalizer == FinalizerName {
-			nc.SetFinalizers(slices.Delete(nc.Finalizers, i, i+1))
-			break
-		}
-	}
+	config.RemoveFinalizer(&nc.ObjectMeta)
 }
 
 // Cleanup removes all labels, annotations, and taints from the NodeConfig
@@ -119,16 +110,7 @@ func (nc *NodeConfig) GetLabelSet() map[string]string {
 		nc.Spec.Labels = make(map[string]string)
 	}
 
-	labelSet := nc.Spec.Labels
-
-	// If the label is in the appliedLabels status, but not in the spec, remove it from the labelSet
-	for key := range nc.Status.AppliedLabels {
-		if _, exists := nc.Spec.Labels[key]; !exists {
-			labelSet[key] = ""
-		}
-	}
-
-	return labelSet
+	return config.ProcessMap(nc.Spec.Labels, nc.Status.AppliedLabels)
 }
 
 // These two are basically identical, so we should replace them with a single function
@@ -139,21 +121,14 @@ func (nc *NodeConfig) GetAnnotationSet() map[string]string {
 		nc.Spec.Annotations = make(map[string]string)
 	}
 
-	AnnotationSet := nc.Spec.Annotations
-
-	for key := range nc.Status.AppliedAnnotations {
-		if _, exists := nc.Spec.Annotations[key]; !exists {
-			AnnotationSet[key] = ""
-		}
-	}
-
-	return AnnotationSet
+	return config.ProcessMap(nc.Spec.Annotations, nc.Status.AppliedAnnotations)
 }
 
 func (nc *NodeConfig) ErrorStatus() {
 	nc.Status.AppliedLabels = nc.Spec.Labels
 	nc.Status.AppliedAnnotations = nc.Spec.Annotations
 	nc.Status.AppliedTaints = nc.Spec.Taints
+	nc.Status.AppliedSelector = nc.Spec.Selector
 	nc.Status.Conditions = []metav1.Condition{
 		{
 			Type:               "Applied",
@@ -167,9 +142,14 @@ func (nc *NodeConfig) ErrorStatus() {
 }
 
 func (nc *NodeConfig) UpdateStatus() {
+
+	// Clean will remove all empty labels and annotations from the NodeConfig
+	nc.Spec.Clean()
+
 	nc.Status.AppliedLabels = nc.Spec.Labels
 	nc.Status.AppliedAnnotations = nc.Spec.Annotations
 	nc.Status.AppliedTaints = nc.Spec.Taints
+	nc.Status.AppliedSelector = nc.Spec.Selector
 	nc.Status.Conditions = []metav1.Condition{
 		{
 			Type:               "Applied",
@@ -183,6 +163,7 @@ func (nc *NodeConfig) UpdateStatus() {
 }
 
 // Match checks if the node matches all selectors in the NodeConfig
+// This is used to determine if the NodeConfig should be applied to the node when triggered by a watcher event
 func (nc *NodeConfig) Match(node *corev1.Node) bool {
 	if nc.Spec.Selector.NodeSelector == nil {
 		return true
@@ -232,11 +213,11 @@ func (nc *NodeConfig) GetTaintSet() []corev1.Taint {
 }
 
 // Match checks if the node matches all selectors in the NodeConfig
-func (nc *NodeConfig) FindTaint(key string) (v1.Taint, bool) {
+func (nc *NodeConfig) FindTaint(key string) (corev1.Taint, bool) {
 	for _, taint := range nc.Spec.Taints {
 		if taint.Key == key {
 			return taint, true
 		}
 	}
-	return v1.Taint{}, false
+	return corev1.Taint{}, false
 }

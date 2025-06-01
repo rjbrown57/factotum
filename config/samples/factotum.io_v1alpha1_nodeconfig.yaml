@@ -6,9 +6,6 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: nodeconfig-sample
 spec:
-  selector:
-    nodeSelector:
-      kubernetes.io/hostname: looknuc3
   annotations:
     factotum: applied
   labels:

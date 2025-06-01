@@ -1,0 +1,22 @@
+# permissions for end users to view namespaceconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    {{- include "factotum.labels" . | nindent 4 }}
+  name: namespaceconfig-viewer-role
+rules:
+- apiGroups:
+  - factotum.io
+  resources:
+  - namespaceconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - factotum.io
+  resources:
+  - namespaceconfigs/status
+  verbs:
+  - get

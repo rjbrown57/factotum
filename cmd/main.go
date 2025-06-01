@@ -59,6 +59,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -69,6 +70,15 @@ func main() {
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+
+	// Enable/Disable controllers here
+	var nsController bool = false
+	var NodeController bool = false
+	flag.BoolVar(&nsController, "namespace-controller", nsController,
+		"Enable the NamespaceConfig controller.")
+	flag.BoolVar(&NodeController, "node-controller", NodeController,
+		"Enable the NodeConfig controller. ")
+
 	opts := zap.Options{
 		Development: true,
 	}
@@ -144,13 +154,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.NodeConfigReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "NodeConfig")
-		os.Exit(1)
+	if NodeController {
+		if err = (&controller.NodeConfigReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "NodeConfig")
+			os.Exit(1)
+		}
 	}
+
+	if nsController {
+		if err = (&controller.NamespaceConfigReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "NamespaceConfig")
+			os.Exit(1)
+		}
+	}
+
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

@@ -11,8 +11,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 
+	"encoding/json"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 )
 
 func GetConfig() *rest.Config {
@@ -60,6 +66,34 @@ func GetNodes(c *kubernetes.Clientset) (*v1.NodeList, error) {
 	return c.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 }
 
-func UpdateNode(c *kubernetes.Clientset, node *v1.Node) (*v1.Node, error) {
-	return c.CoreV1().Nodes().Update(context.TODO(), node, metav1.UpdateOptions{})
+func StrategicMerge(c *kubernetes.Clientset, original metav1.Object, modified metav1.Object) (metav1.Object, error) {
+	// Use the appropriate client to apply the patch based on the object's type
+	// This example assumes the object is a Namespace, but you should handle other types as needed
+
+	originalJSON, err := json.Marshal(original)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal original object: %w", err)
+	}
+
+	modifiedJSON, err := json.Marshal(modified)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal modified object: %w", err)
+	}
+
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, original)
+
+	switch obj := original.(type) {
+	case *v1.Namespace:
+		if err != nil {
+			return nil, fmt.Errorf("failed to create strategic merge patch: %w", err)
+		}
+		return c.CoreV1().Namespaces().Patch(context.TODO(), obj.Name, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
+	case *v1.Node:
+		if err != nil {
+			return nil, fmt.Errorf("failed to create strategic merge patch: %w", err)
+		}
+		return c.CoreV1().Nodes().Patch(context.TODO(), obj.Name, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
+	default:
+		return nil, fmt.Errorf("unsupported object type")
+	}
 }

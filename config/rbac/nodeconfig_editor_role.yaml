@@ -8,7 +8,7 @@ metadata:
   name: nodeconfig-editor-role
 rules:
 - apiGroups:
-  - factotum.io.factotum.io
+  - factotum.io
   resources:
   - nodeconfigs
   verbs:
@@ -20,7 +20,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - factotum.io.factotum.io
+  - factotum.io
   resources:
   - nodeconfigs/status
   verbs:
