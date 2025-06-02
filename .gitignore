@@ -27,4 +27,4 @@ go.work
 *~
 notes
 ./factotum
-./dist
+dist
