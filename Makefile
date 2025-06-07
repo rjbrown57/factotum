@@ -334,5 +334,8 @@ crd-apply:
 helm-install: 
 	helm upgrade --install factotum deploy/chart/factotum -n factoum --create-namespace
 
+helm-uninstall: 
+	helm uninstall factotum -n factoum
+
 kind-delete:
 	kind delete cluster
