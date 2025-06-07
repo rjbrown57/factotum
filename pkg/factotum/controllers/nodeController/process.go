@@ -1,6 +1,9 @@
 package nodecontroller
 
 import (
+	"fmt"
+	"regexp"
+
 	"github.com/rjbrown57/factotum/api/v1alpha1"
 	"github.com/rjbrown57/factotum/pkg/k8s"
 
@@ -125,14 +128,33 @@ func (nc *NodeController) GetNodeDiffSet(PreviousSelector, CurrentSelector v1alp
 // matchNode checks if a node matches the given selector
 func matchNode(node *v1.Node, selector v1alpha1.NodeSelector) bool {
 	if selector.NodeSelector == nil {
+		fmt.Println("Selector is nil, matching all nodes")
 		return true
 	}
 
 	for key, value := range selector.NodeSelector {
-		if nodeValue, exists := node.Labels[key]; !exists || nodeValue != value {
+
+		// If the label exists in the node's labels, we will check if it matches the regex
+		if nodeValue, exists := node.Labels[key]; exists {
+
+			// if the regex is fails to compile, we log the error and return false
+			r, err := regexp.Compile(value)
+			if err != nil {
+				fmt.Println("Error compiling regex", "key", key, "value", value, "error", err)
+				return false
+			}
+
+			if !r.MatchString(nodeValue) {
+				fmt.Println("Node does not match selector", "key", key, "value", value, "nodeValue", nodeValue)
+				return false
+			}
+
+		} else {
 			return false
 		}
 	}
+
+	fmt.Println("Node matches selector", "node", node.Name, "selector", selector.NodeSelector)
 
 	return true
 }
