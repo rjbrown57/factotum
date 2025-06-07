@@ -23,6 +23,8 @@ func (t *TaintHandler) Update(Object v1.Object, Config factotum.Config) v1.Objec
 		return Object
 	}
 
+	debugLog.Info("TaintHandler Update", "node", node.Name)
+
 	// Assert that the Config is of type NodeConfig
 	// so we can access the GetTaintSet method
 	NodeConfig, ok := Config.(*v1alpha1.NodeConfig)
@@ -37,9 +39,11 @@ func (t *TaintHandler) Update(Object v1.Object, Config factotum.Config) v1.Objec
 		switch currentTaint, exists := nodeTaintMap[taint.Key]; {
 		// Taint is missing in node, add it
 		case !exists:
+			debugLog.Info("TaintHandler Adding Taint to", "node", node.Name)
 			node.Spec.Taints = append(node.Spec.Taints, taint)
 		// Taint is wrong in node, update it
 		case !reflect.DeepEqual(currentTaint, taint):
+			debugLog.Info("TaintHandler Updating Taint on", "node", node.Name, "taint", taint.Key)
 			if taint.Effect == "" {
 				if index := FindTaintIndex(taint.Key, node.Spec.Taints); index != -1 {
 					node.Spec.Taints = slices.Delete(node.Spec.Taints, index, index+1)

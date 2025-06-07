@@ -1,7 +1,6 @@
 package nodecontroller
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/rjbrown57/factotum/api/v1alpha1"
@@ -18,14 +17,16 @@ func (nc *NodeController) Update(node *v1.Node, NodeConfig *v1alpha1.NodeConfig)
 
 	for _, h := range nc.Handlers {
 		// Call the handler functions
+		traceLog.Info("Calling handler", "handler", h.GetName(), "node", node.Name, "config", NodeConfig.Name)
 		_ = h.Update(newNode, NodeConfig)
 	}
 
 	_, err = k8s.StrategicMerge(nc.K8sClient, node, newNode)
 	if err != nil {
-		DebugLog.Error(err, "Error updating node", "node", node.Name)
+		log.Error(err, "Error updating node", "node", node.Name)
 	} else {
-		DebugLog.Info("Updated node", "node", node.Name)
+		// Update the applied selector in the config status
+		log.Info("Updated node", "node", node.Name)
 	}
 
 	return err
@@ -50,7 +51,7 @@ func (nc *NodeController) Proccessor() error {
 				c.Cleanup()
 
 				for _, node := range nc.GetNodeDiffSet(c.Status.AppliedSelector, c.Spec.Selector) {
-					log.Info("Processing node", "node", node.Name)
+					debugLog.Info("Processing node", "node", node.Name)
 					if err := nc.Update(node, c); err != nil {
 						log.Error(err, "Error processing node", "node", node.Name)
 					}
@@ -58,7 +59,7 @@ func (nc *NodeController) Proccessor() error {
 			}
 
 			for _, node := range nc.GetMatchingNodes(msg.Config) {
-				log.Info("Processing node", "node", node.Name)
+				debugLog.Info("Processing node", "node", node.Name)
 				if err := nc.Update(node, msg.Config); err != nil {
 					log.Error(err, "Error processing node", "node", node.Name)
 				}
@@ -70,7 +71,7 @@ func (nc *NodeController) Proccessor() error {
 			node := msg.Node
 			// If the Node Has Configs that match we will process the node
 			for _, NodeConfig := range nc.GetMatchingNodeConfigs(node) {
-				log.Info("Processing node", "node", node.Name)
+				debugLog.Info("Processing node", "node", node.Name)
 				if err := nc.Update(node, NodeConfig); err != nil {
 					log.Error(err, "Error processing node", "node", node.Name)
 				}
@@ -128,7 +129,6 @@ func (nc *NodeController) GetNodeDiffSet(PreviousSelector, CurrentSelector v1alp
 // matchNode checks if a node matches the given selector
 func matchNode(node *v1.Node, selector v1alpha1.NodeSelector) bool {
 	if selector.NodeSelector == nil {
-		fmt.Println("Selector is nil, matching all nodes")
 		return true
 	}
 
@@ -140,12 +140,10 @@ func matchNode(node *v1.Node, selector v1alpha1.NodeSelector) bool {
 			// if the regex is fails to compile, we log the error and return false
 			r, err := regexp.Compile(value)
 			if err != nil {
-				fmt.Println("Error compiling regex", "key", key, "value", value, "error", err)
 				return false
 			}
 
 			if !r.MatchString(nodeValue) {
-				fmt.Println("Node does not match selector", "key", key, "value", value, "nodeValue", nodeValue)
 				return false
 			}
 
@@ -153,8 +151,6 @@ func matchNode(node *v1.Node, selector v1alpha1.NodeSelector) bool {
 			return false
 		}
 	}
-
-	fmt.Println("Node matches selector", "node", node.Name, "selector", selector.NodeSelector)
 
 	return true
 }
