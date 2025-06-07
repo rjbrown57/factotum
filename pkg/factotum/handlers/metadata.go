@@ -19,3 +19,7 @@ func (m *MetaDataHandler) Update(Object v1.Object, FactotumConfig factotum.Confi
 
 	return Object
 }
+
+func (m *MetaDataHandler) GetName() string {
+	return "MetaDataHandler"
+}

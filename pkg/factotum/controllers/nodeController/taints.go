@@ -12,6 +12,10 @@ import (
 
 type TaintHandler struct{}
 
+func (t *TaintHandler) GetName() string {
+	return "TaintHandler"
+}
+
 func (t *TaintHandler) Update(Object v1.Object, Config factotum.Config) v1.Object {
 
 	node, ok := Object.(*corev1.Node)

@@ -9,4 +9,5 @@ import (
 // and return true if any of the metadata was updated
 type Handler interface {
 	Update(object v1.Object, FactotumConfig Config) v1.Object
+	GetName() string
 }
