@@ -11,6 +11,7 @@ default: create
 create:
 	@echo "Creating kwok cluster"
 	kwok create cluster -c $(CONFIG)
+	kubectl apply -f ../config/crd/bases/
 
 .PHONY: delete
 delete:
