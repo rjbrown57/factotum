@@ -7,7 +7,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rjbrown57/factotum/api/v1alpha1"
 	fc "github.com/rjbrown57/factotum/pkg/factotum"
@@ -17,9 +16,6 @@ import (
 )
 
 const controllerName = "namespacecontroller"
-
-var log = ctrl.Log.WithName(controllerName)
-var DebugLog = log.V(1)
 
 type NamespaceController struct {
 	K8sClient        *kubernetes.Clientset
@@ -63,11 +59,11 @@ func NewNamespaceController(k8sClient *kubernetes.Clientset, SharedCache map[str
 	c.Watcher = watcher
 
 	// Start watching for obj events
-	DebugLog.Info("Starting to Watch routine")
+	debugLog.Info("Starting to Watch routine")
 	go c.Watch(watcher.ResultChan())
 
 	// Start the NodeApplier that will apply labels to objs
-	DebugLog.Info("Starting ApplyLabels routine")
+	debugLog.Info("Starting ApplyLabels routine")
 	go c.Proccessor()
 
 	return c, nil

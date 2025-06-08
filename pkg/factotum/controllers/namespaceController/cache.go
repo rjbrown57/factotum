@@ -28,6 +28,9 @@ func (Cache *Cache) Set(name string, obj *v1.Namespace) {
 	defer Cache.Mu.Unlock()
 
 	Cache.ObjMap[name] = obj.DeepCopy()
+
+	debugLog.Info("NS Cache Set NS", "ns", name)
+
 }
 
 func (Cache *Cache) Delete(name string) {
@@ -35,4 +38,6 @@ func (Cache *Cache) Delete(name string) {
 	defer Cache.Mu.Unlock()
 
 	delete(Cache.ObjMap, name)
+	debugLog.Info("Ns Cache Delete NS", "ns", name)
+
 }

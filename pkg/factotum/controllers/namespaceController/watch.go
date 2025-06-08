@@ -14,7 +14,7 @@ import (
 func (c *NamespaceController) Watch(ch <-chan watch.Event) error {
 
 	for event := range ch {
-		DebugLog.Info("NS Cache Watcher", "event", event.Type)
+		debugLog.Info("NS Cache Watcher", "event", event.Type)
 		switch event.Type {
 		case watch.Added, watch.Modified:
 
@@ -27,7 +27,6 @@ func (c *NamespaceController) Watch(ch <-chan watch.Event) error {
 			newNode, exists := c.Cache.Get(obj.Name)
 			if !exists {
 				// If the obj doesn't exist in the cache, add it
-				DebugLog.Info("Node Cache Added Node", "objs", obj.Name)
 				c.Cache.Set(obj.Name, obj)
 				continue
 			}
@@ -49,7 +48,6 @@ func (c *NamespaceController) Watch(ch <-chan watch.Event) error {
 				continue
 			}
 			// Remove the obj from the obj list
-			DebugLog.Info("Node Cache Removed Node", "objs", obj.Name)
 			c.Cache.Delete(obj.Name)
 		}
 	}
@@ -61,10 +59,12 @@ func (c *NamespaceController) Watch(ch <-chan watch.Event) error {
 func Compare(obj1, obj2 *v1.Namespace) bool {
 
 	if !reflect.DeepEqual(obj1.Annotations, obj2.Annotations) {
+		traceLog.Info("Annotations not equal", "obj1", obj1.Name, "obj2", obj2.Name)
 		return false
 	}
 
 	if !reflect.DeepEqual(obj1.Labels, obj2.Labels) {
+		traceLog.Info("Labels not equal", "obj1", obj1.Name, "obj2", obj2.Name)
 		return false
 	}
 
