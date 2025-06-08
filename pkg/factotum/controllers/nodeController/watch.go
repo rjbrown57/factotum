@@ -14,7 +14,7 @@ import (
 func (nc *NodeController) Watch(ch <-chan watch.Event) error {
 
 	for event := range ch {
-		DebugLog.Info("Node Cache Watcher", "event", event.Type)
+		debugLog.Info("Node Watcher", "event", event.Type)
 		switch event.Type {
 		case watch.Added, watch.Modified:
 
@@ -27,7 +27,6 @@ func (nc *NodeController) Watch(ch <-chan watch.Event) error {
 			newNode, exists := nc.NodeCache.GetNode(node.Name)
 			if !exists {
 				// If the node doesn't exist in the cache, add it
-				DebugLog.Info("Node Cache Added Node", "nodes", node.Name)
 				nc.NodeCache.SetNode(node.Name, node)
 				continue
 			}
@@ -49,7 +48,6 @@ func (nc *NodeController) Watch(ch <-chan watch.Event) error {
 				continue
 			}
 			// Remove the node from the node list
-			DebugLog.Info("Node Cache Removed Node", "nodes", node.Name)
 			nc.NodeCache.DeleteNode(node.Name)
 		}
 	}
@@ -61,14 +59,17 @@ func (nc *NodeController) Watch(ch <-chan watch.Event) error {
 func CompareNodes(node1, node2 *v1.Node) bool {
 
 	if !reflect.DeepEqual(node1.Annotations, node2.Annotations) {
+		traceLog.Info("Node Annotations differ", "node1", node1.Name, "node2", node2.Name)
 		return false
 	}
 
 	if !reflect.DeepEqual(node1.Labels, node2.Labels) {
+		traceLog.Info("Node Labels differ", "node1", node1.Name, "node2", node2.Name)
 		return false
 	}
 
 	if !reflect.DeepEqual(node1.Spec.Taints, node2.Spec.Taints) {
+		traceLog.Info("Node Taints differ", "node1", node1.Name, "node2", node2.Name)
 		return false
 	}
 

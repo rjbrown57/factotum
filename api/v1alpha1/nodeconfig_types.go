@@ -83,7 +83,8 @@ type NodeSelector struct {
 }
 
 func (nc *NodeConfig) DetectChange() bool {
-	if !reflect.DeepEqual(nc.Status.AppliedSelector, nc.Spec.Selector) {
+
+	if !reflect.DeepEqual(nc.Status.AppliedSelector, nc.Spec.Selector) && nc.Status.AppliedSelector.NodeSelector != nil {
 		return true
 	}
 	return false

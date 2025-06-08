@@ -49,6 +49,7 @@ spec:
             {{- if .Values.factotum.nodeController.enabled }}
             - --node-controller
             {{- end }}
+            - --zap-devel={{ include "factotum.development" . | quote }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

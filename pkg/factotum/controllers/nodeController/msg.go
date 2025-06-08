@@ -12,7 +12,7 @@ type NcMsg struct {
 }
 
 func (nc *NodeController) Notify(msg NcMsg) {
-	log.Info("Notifying NodeController", "source", msg.Header)
+	debugLog.Info("Notifying NodeController", "source", msg.Header)
 	nc.Wg.Add(1)
 	nc.MsgChan <- msg
 }

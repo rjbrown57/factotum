@@ -1,6 +1,8 @@
 package nodecontroller
 
 import (
+	"regexp"
+
 	"github.com/rjbrown57/factotum/api/v1alpha1"
 	"github.com/rjbrown57/factotum/pkg/k8s"
 
@@ -15,14 +17,16 @@ func (nc *NodeController) Update(node *v1.Node, NodeConfig *v1alpha1.NodeConfig)
 
 	for _, h := range nc.Handlers {
 		// Call the handler functions
+		traceLog.Info("Calling handler", "handler", h.GetName(), "node", node.Name, "config", NodeConfig.Name)
 		_ = h.Update(newNode, NodeConfig)
 	}
 
 	_, err = k8s.StrategicMerge(nc.K8sClient, node, newNode)
 	if err != nil {
-		DebugLog.Error(err, "Error updating node", "node", node.Name)
+		log.Error(err, "Error updating node", "node", node.Name)
 	} else {
-		DebugLog.Info("Updated node", "node", node.Name)
+		// Update the applied selector in the config status
+		log.Info("Updated node", "node", node.Name)
 	}
 
 	return err
@@ -47,7 +51,7 @@ func (nc *NodeController) Proccessor() error {
 				c.Cleanup()
 
 				for _, node := range nc.GetNodeDiffSet(c.Status.AppliedSelector, c.Spec.Selector) {
-					log.Info("Processing node", "node", node.Name)
+					debugLog.Info("Processing node", "node", node.Name)
 					if err := nc.Update(node, c); err != nil {
 						log.Error(err, "Error processing node", "node", node.Name)
 					}
@@ -55,7 +59,7 @@ func (nc *NodeController) Proccessor() error {
 			}
 
 			for _, node := range nc.GetMatchingNodes(msg.Config) {
-				log.Info("Processing node", "node", node.Name)
+				debugLog.Info("Processing node", "node", node.Name)
 				if err := nc.Update(node, msg.Config); err != nil {
 					log.Error(err, "Error processing node", "node", node.Name)
 				}
@@ -67,7 +71,7 @@ func (nc *NodeController) Proccessor() error {
 			node := msg.Node
 			// If the Node Has Configs that match we will process the node
 			for _, NodeConfig := range nc.GetMatchingNodeConfigs(node) {
-				log.Info("Processing node", "node", node.Name)
+				debugLog.Info("Processing node", "node", node.Name)
 				if err := nc.Update(node, NodeConfig); err != nil {
 					log.Error(err, "Error processing node", "node", node.Name)
 				}
@@ -129,7 +133,21 @@ func matchNode(node *v1.Node, selector v1alpha1.NodeSelector) bool {
 	}
 
 	for key, value := range selector.NodeSelector {
-		if nodeValue, exists := node.Labels[key]; !exists || nodeValue != value {
+
+		// If the label exists in the node's labels, we will check if it matches the regex
+		if nodeValue, exists := node.Labels[key]; exists {
+
+			// if the regex is fails to compile, we log the error and return false
+			r, err := regexp.Compile(value)
+			if err != nil {
+				return false
+			}
+
+			if !r.MatchString(nodeValue) {
+				return false
+			}
+
+		} else {
 			return false
 		}
 	}

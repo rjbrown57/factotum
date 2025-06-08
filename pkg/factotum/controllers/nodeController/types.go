@@ -7,7 +7,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rjbrown57/factotum/api/v1alpha1"
 	fc "github.com/rjbrown57/factotum/pkg/factotum"
@@ -17,9 +16,6 @@ import (
 )
 
 const controllerName = "nodeController"
-
-var log = ctrl.Log.WithName(controllerName)
-var DebugLog = log.V(1)
 
 type NodeController struct {
 	K8sClient   *kubernetes.Clientset
@@ -34,7 +30,6 @@ type NodeController struct {
 
 func NewNodeController(k8sClient *kubernetes.Clientset) (*NodeController, error) {
 
-	log.Info("Initializing", "Controller", controllerName)
 	// Initialize the NodeController with a Kubernetes client
 	// and an empty map of NodeLabels
 	nc := &NodeController{
@@ -53,6 +48,8 @@ func NewNodeController(k8sClient *kubernetes.Clientset) (*NodeController, error)
 		},
 	}
 
+	log.Info("Initializing", "Controller", controllerName)
+
 	// Set up a watch on the nodes in the cluster
 	watcher, err := k8sClient.CoreV1().Nodes().Watch(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -63,11 +60,11 @@ func NewNodeController(k8sClient *kubernetes.Clientset) (*NodeController, error)
 	nc.Watcher = watcher
 
 	// Start watching for node events
-	DebugLog.Info("Starting to WatchNodes routine")
+	debugLog.Info("Starting to WatchNodes routine")
 	go nc.Watch(watcher.ResultChan())
 
 	// Start the NodeApplier that will apply labels to nodes
-	DebugLog.Info("Starting ApplyLabels routine")
+	debugLog.Info("Starting ApplyLabels routine")
 	go nc.Proccessor()
 
 	return nc, nil

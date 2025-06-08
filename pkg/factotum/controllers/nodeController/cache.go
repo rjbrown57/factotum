@@ -28,6 +28,8 @@ func (Cache *Cache) SetNode(name string, node *v1.Node) {
 	defer Cache.Mu.Unlock()
 
 	Cache.ObjMap[name] = node.DeepCopy()
+
+	debugLog.Info("Node Cache Set Node", "nodes", name)
 }
 
 func (Cache *Cache) DeleteNode(name string) {
@@ -35,4 +37,6 @@ func (Cache *Cache) DeleteNode(name string) {
 	defer Cache.Mu.Unlock()
 
 	delete(Cache.ObjMap, name)
+
+	debugLog.Info("Node Cache Delete Node", "nodes", name)
 }
