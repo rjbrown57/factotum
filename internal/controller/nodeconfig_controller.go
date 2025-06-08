@@ -18,13 +18,18 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
+	v1core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/rjbrown57/factotum/api/v1alpha1"
 	"github.com/rjbrown57/factotum/pkg/factotum/config"
@@ -151,6 +156,8 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.NodeConfig{}).
+		Watches(&v1core.Node{},
+			handler.EnqueueRequestsFromMapFunc(r.mapNodeToNodeLabeler)).
 		Complete(r)
 
 	if err != nil {
@@ -168,4 +175,10 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Nc.NodeConfigs = r.NodeConfigs
 
 	return nil
+}
+
+func (r *NodeConfigReconciler) mapNodeToNodeLabeler(ctx context.Context, obj client.Object) []reconcile.Request {
+	var requests []reconcile.Request
+	fmt.Println("Mapping Node to NodeConfig")
+	return requests
 }
