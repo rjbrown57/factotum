@@ -24,7 +24,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/rjbrown57/factotum/api/v1alpha1"
 	"github.com/rjbrown57/factotum/pkg/factotum/config"
@@ -57,10 +56,6 @@ type NamespaceConfigReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *NamespaceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
-
-	controllerLog := log.FromContext(ctx)
-	DebugLog := controllerLog.V(1)
 
 	controllerLog.Info("Reconciling NamespaceConfig", "name", req.NamespacedName.String())
 
@@ -74,7 +69,7 @@ func (r *NamespaceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	// Check if the NamespaceConfig is being deleted
 	if !fConfig.DeletionTimestamp.IsZero() {
 		// Handle deletion logic
-		DebugLog.Info("NamespaceConfig is being deleted", "name", req.NamespacedName.Name)
+		debugLog.Info("NamespaceConfig is being deleted", "name", req.NamespacedName.Name)
 
 		// Cleanup the NamespaceConfig instance
 		// This will remove all labels, annotations, and taints from the NamespaceConfig
@@ -126,13 +121,13 @@ func (r *NamespaceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// The NamespaceConfig instance is being created or updated
 	// We need to update the NamespaceConfig instance in the map
-	DebugLog.Info("NamespaceConfig found, updating map", "name", req.NamespacedName, "labels", fConfig.Spec.Labels)
+	debugLog.Info("NamespaceConfig found, updating map", "name", req.NamespacedName, "labels", fConfig.Spec.Labels)
 	r.Controller.Mu.Lock()
 	r.NamspaceConfigs[req.NamespacedName.String()] = fConfig
 	r.Controller.Mu.Unlock()
 
 	// Send a message to the NodeController to process the config
-	DebugLog.Info("Sending message to NodeController to apply configs", "NamespaceConfigs", len(r.NamspaceConfigs))
+	debugLog.Info("Sending message to NodeController to apply configs", "NamespaceConfigs", len(r.NamspaceConfigs))
 	r.Controller.Notify(controller.Msg{
 		Header:    "Reconciler",
 		Namespace: nil,

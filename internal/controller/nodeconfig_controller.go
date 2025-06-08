@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
 	v1core "k8s.io/api/core/v1"
@@ -28,7 +27,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/rjbrown57/factotum/api/v1alpha1"
@@ -57,10 +55,6 @@ type NodeConfigReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
-
-	controllerLog := log.FromContext(ctx)
-	DebugLog := controllerLog.V(1)
 
 	controllerLog.Info("Reconciling NodeConfig", "name", req.NamespacedName.String())
 
@@ -74,7 +68,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Check if the NodeConfig is being deleted
 	if !nodeConfig.DeletionTimestamp.IsZero() {
 		// Handle deletion logic
-		DebugLog.Info("NodeConfig is being deleted", "name", req.NamespacedName.Name)
+		debugLog.Info("NodeConfig is being deleted", "name", req.NamespacedName.Name)
 
 		// Cleanup the NodeConfig instance
 		// This will remove all labels, annotations, and taints from the NodeConfig
@@ -126,13 +120,13 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// The NodeConfig instance is being created or updated
 	// We need to update the NodeConfig instance in the map
-	DebugLog.Info("NodeConfig found, updating map", "name", req.NamespacedName, "labels", nodeConfig.Spec.Labels)
+	debugLog.Info("NodeConfig found, updating map", "name", req.NamespacedName, "labels", nodeConfig.Spec.Labels)
 	r.Nc.NcMu.Lock()
 	r.NodeConfigs[req.NamespacedName.String()] = nodeConfig
 	r.Nc.NcMu.Unlock()
 
 	// Send a message to the NodeController to process the config
-	DebugLog.Info("Sending message to NodeController to apply configs", "NodeConfigs", len(r.NodeConfigs))
+	debugLog.Info("Sending message to NodeController to apply configs", "NodeConfigs", len(r.NodeConfigs))
 	r.Nc.Notify(nc.NcMsg{
 		Header: "Reconciler",
 		Node:   nil,
@@ -157,6 +151,7 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.NodeConfig{}).
 		Watches(&v1core.Node{},
+			// We will map the Node to the NodeConfig
 			handler.EnqueueRequestsFromMapFunc(r.mapNodeToNodeLabeler)).
 		Complete(r)
 
@@ -178,7 +173,30 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *NodeConfigReconciler) mapNodeToNodeLabeler(ctx context.Context, obj client.Object) []reconcile.Request {
+
 	var requests []reconcile.Request
-	fmt.Println("Mapping Node to NodeConfig")
+
+	// We will be sent a node
+	// we check if any NodeConfig matches the node
+	// any node config that matches the node will be passed along to the Reconcile function
+	node, ok := obj.(*v1core.Node)
+	if !ok {
+		controllerLog.Info("Error casting object to Node")
+		return requests
+	}
+
+	for _, config := range r.Nc.GetMatchingNodeConfigs(node) {
+		// We will create a request for each NodeConfig that matches the node
+		// This will trigger the Reconcile function for each matching NodeConfig
+		requests = append(requests, reconcile.Request{
+			NamespacedName: client.ObjectKey{
+				Name: config.Name,
+				// NodeConfig is cluster scoped, so we don't need a namespace
+			},
+		})
+	}
+
+	debugLog.Info("Mapping Node to NodeConfig", "node", node.Name, "requests", len(requests))
+
 	return requests
 }
