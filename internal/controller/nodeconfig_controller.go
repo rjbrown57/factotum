@@ -126,7 +126,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	r.Nc.NcMu.Unlock()
 
 	// Send a message to the NodeController to process the config
-	debugLog.Info("Sending message to NodeController to apply configs", "NodeConfigs", len(r.NodeConfigs))
+	debugLog.Info("Applying configs", "NodeConfigs", req.NamespacedName.String())
 	r.Nc.Notify(nc.NcMsg{
 		Header: "Reconciler",
 		Node:   nil,
@@ -172,6 +172,7 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
+// mapNodeToNodeLabeler maps a Node to NodeConfigs
 func (r *NodeConfigReconciler) mapNodeToNodeLabeler(ctx context.Context, obj client.Object) []reconcile.Request {
 
 	var requests []reconcile.Request
@@ -184,6 +185,18 @@ func (r *NodeConfigReconciler) mapNodeToNodeLabeler(ctx context.Context, obj cli
 		controllerLog.Info("Error casting object to Node")
 		return requests
 	}
+
+	_, exists := r.Nc.NodeCache.GetNode(node.Name)
+	if !exists {
+		// If the node doesn't exist in the cache, add it
+		r.Nc.NodeCache.SetNode(node.Name, node)
+	}
+
+	// TODO Add comparison here to check if the node has changed
+	// If the node has changed, we will trigger the Reconcile function for each matching NodeConfig
+
+	// We will need to handle nodeRemoval from the API as well
+	// If the node is removed, we will need to remove it from the NodeCache
 
 	for _, config := range r.Nc.GetMatchingNodeConfigs(node) {
 		// We will create a request for each NodeConfig that matches the node

@@ -38,43 +38,27 @@ func (nc *NodeController) Proccessor() error {
 
 	for msg := range nc.MsgChan {
 
-		// If msg node is nil, this indicates a Config Event
-		// Process all matching nodes
-		switch {
-		case msg.Node == nil:
+		traceLog.Info("Processing message", "config", msg.Config.Name)
 
-			if msg.Config.DetectChange() {
-				log.Info("Selector has changed, processing all nodes", "config", msg.Config.Spec.Selector)
-				// Make a deep copy of the config to avoid modifying the original
-				c := msg.Config.DeepCopy()
-				// Call cleanup to remove any config from the no longer selected nodes
-				c.Cleanup()
+		if msg.Config.DetectChange() {
+			log.Info("Selector has changed, processing all nodes", "config", msg.Config.Spec.Selector)
+			// Make a deep copy of the config to avoid modifying the original
+			c := msg.Config.DeepCopy()
+			// Call cleanup to remove any config from the no longer selected nodes
+			c.Cleanup()
 
-				for _, node := range nc.GetNodeDiffSet(c.Status.AppliedSelector, c.Spec.Selector) {
-					debugLog.Info("Processing node", "node", node.Name)
-					if err := nc.Update(node, c); err != nil {
-						log.Error(err, "Error processing node", "node", node.Name)
-					}
-				}
-			}
-
-			for _, node := range nc.GetMatchingNodes(msg.Config) {
+			for _, node := range nc.GetNodeDiffSet(c.Status.AppliedSelector, c.Spec.Selector) {
 				debugLog.Info("Processing node", "node", node.Name)
-				if err := nc.Update(node, msg.Config); err != nil {
+				if err := nc.Update(node, c); err != nil {
 					log.Error(err, "Error processing node", "node", node.Name)
 				}
 			}
+		}
 
-		// Update to a specific node
-		// If msg node is not nil, we apply to the specific node, This indicates the msg is from the watcher so we need to use our cache
-		case msg.Node != nil:
-			node := msg.Node
-			// If the Node Has Configs that match we will process the node
-			for _, NodeConfig := range nc.GetMatchingNodeConfigs(node) {
-				debugLog.Info("Processing node", "node", node.Name)
-				if err := nc.Update(node, NodeConfig); err != nil {
-					log.Error(err, "Error processing node", "node", node.Name)
-				}
+		for _, node := range nc.GetMatchingNodes(msg.Config) {
+			debugLog.Info("Processing node", "node", node.Name)
+			if err := nc.Update(node, msg.Config); err != nil {
+				log.Error(err, "Error processing node", "node", node.Name)
 			}
 		}
 
