@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/rjbrown57/factotum/pkg/factotum/config"
 	corev1 "k8s.io/api/core/v1"
@@ -30,6 +31,7 @@ import (
 // NamespaceConfigSpec defines the desired state of NamespaceConfig
 type NamespaceConfigSpec struct {
 	config.CommonSpec `json:",inline"`
+	Selector          NamespaceSelector `json:"selector,omitempty"`
 }
 
 // NamespaceConfigStatus defines the observed state of NamespaceConfig
@@ -61,6 +63,10 @@ type NamespaceConfigList struct {
 
 func init() {
 	SchemeBuilder.Register(&NamespaceConfig{}, &NamespaceConfigList{})
+}
+
+type NamespaceSelector struct {
+	NamespaceSelector map[string]string `json:"namespaceSelector,omitempty"`
 }
 
 func (nc *NamespaceConfig) RemoveFinalizer() {
@@ -134,25 +140,23 @@ func (c *NamespaceConfig) UpdateStatus() {
 // Match checks if the node matches all selectors in the NamespaceConfig
 func (nc *NamespaceConfig) Match(obj *corev1.Namespace) bool {
 
-	/*
-		if nc.Spec.Selector.NodeSelector == nil {
-			return true
+	if nc.Spec.Selector.NamespaceSelector == nil {
+		return true
+	}
+
+	for SelectorKey, SelectorValue := range nc.Spec.Selector.NamespaceSelector {
+
+		//  All Selector Labels must match
+		if _, exists := obj.Labels[SelectorKey]; !exists {
+			return false
 		}
 
-		for SelectorKey, SelectorValue := range nc.Spec.Selector.NodeSelector {
+		if match, err := regexp.MatchString(SelectorValue, obj.Labels[SelectorKey]); err != nil || !match {
+			// If the regex does not match, return false
+			return false
 
-			//  All Selector Labels must match
-			if _, exists := node.Labels[SelectorKey]; !exists {
-				return false
-			}
-
-			if match, err := regexp.MatchString(SelectorValue, node.Labels[SelectorKey]); err != nil || !match {
-				// If the regex does not match, return false
-				return false
-
-			}
 		}
-	*/
+	}
 
 	return true
 }

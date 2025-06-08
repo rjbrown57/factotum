@@ -1,17 +1,18 @@
 package k8s
 
-// This should probably be moved to k8s package since it's common across
-func ProcessMetaDataMap(currentMap, desiredMap map[string]string) bool {
-	update := false
+import "fmt"
 
-	// Check if the currentMap is nil, if so, initialize it
-	if currentMap == nil {
-		currentMap = make(map[string]string)
-	}
+// ProcessMetaDataMap processes the currentMap and desiredMap for metadata updates.
+func ProcessMetaDataMap(currentMap, desiredMap map[string]string) map[string]string {
 
 	// Check if the desiredMap is nil, if so, initialize it
 	if desiredMap == nil {
 		desiredMap = make(map[string]string)
+	}
+
+	// Check if the currentMap is nil, if so, initialize it
+	if currentMap == nil {
+		return desiredMap
 	}
 
 	for key, value := range desiredMap {
@@ -20,17 +21,17 @@ func ProcessMetaDataMap(currentMap, desiredMap map[string]string) bool {
 		case value == "":
 			// Label is empty, remove it
 			delete(currentMap, key)
-			update = true
+			fmt.Printf("Removing %s from obj\n", key)
 		// Label is missing in node, add it
 		case !exists:
 			currentMap[key] = value
-			update = true
+			fmt.Printf("Adding %s to obj\n", key)
 		// Label is wrong in node, update it
 		case currentValue != value:
 			currentMap[key] = value
-			update = true
+			fmt.Printf("Updating %s to %s in obj\n", key, value)
 		}
 	}
 
-	return update
+	return currentMap
 }

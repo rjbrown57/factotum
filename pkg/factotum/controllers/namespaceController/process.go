@@ -15,14 +15,15 @@ func (c *NamespaceController) Update(namespace *v1.Namespace, NamespaceConfig *v
 
 	for _, h := range c.Handlers {
 		// Call the handler functions
+		traceLog.Info("Calling handler", "handler", h.GetName(), "node", namespace.Name, "config", NamespaceConfig.Name)
 		_ = h.Update(newNs, NamespaceConfig)
 	}
 
 	_, err = k8s.StrategicMerge(c.K8sClient, namespace, newNs)
 	if err != nil {
-		DebugLog.Error(err, "Error updating obj", "obj", namespace.Name)
+		log.Error(err, "Error updating obj", "obj", namespace.Name)
 	} else {
-		DebugLog.Info("Updated obj", "obj", namespace.Name)
+		log.Info("Updated obj", "obj", namespace.Name)
 	}
 
 	return err
@@ -78,10 +79,10 @@ func (c *NamespaceController) GetMatchingNamespaceConfigs(obj *v1.Namespace) []*
 	return matchingConfigs
 }
 
-func (nc *NamespaceController) GetMatchingNamespaces(NamespaceConfig *v1alpha1.NamespaceConfig) []*v1.Namespace {
+func (c *NamespaceController) GetMatchingNamespaces(NamespaceConfig *v1alpha1.NamespaceConfig) []*v1.Namespace {
 	var matchingNamespaces []*v1.Namespace
 
-	for _, obj := range nc.Cache.ObjMap {
+	for _, obj := range c.Cache.ObjMap {
 		if NamespaceConfig.Match(obj) {
 			matchingNamespaces = append(matchingNamespaces, obj)
 		}
