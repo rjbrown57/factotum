@@ -1,10 +1,14 @@
 package namespacecontroller
 
 import (
+	"context"
+
 	"github.com/rjbrown57/factotum/api/v1alpha1"
 	"github.com/rjbrown57/factotum/pkg/k8s"
 
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (c *NamespaceController) Update(namespace *v1.Namespace, NamespaceConfig *v1alpha1.NamespaceConfig) error {
@@ -38,6 +42,34 @@ func (c *NamespaceController) Proccessor() error {
 		// If msg obj is nil, we apply to all objs, This indicates the msg is from the reconciler and we can pass the config
 		switch {
 		case msg.Namespace == nil:
+
+			// First we check on if we have created all the requested namespaces
+
+			for _, ns := range msg.Config.Spec.Namespaces {
+				_, err := c.K8sClient.CoreV1().Namespaces().Get(context.TODO(), ns.Name, metav1.GetOptions{})
+				switch {
+				case apierrors.IsNotFound(err):
+					log.Info("Namespace not found, creating", "namespace", ns.Name)
+					ns := &v1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        ns.Name,
+							Labels:      msg.Config.Labels,
+							Annotations: msg.Config.Annotations,
+						},
+					}
+					ns, err = c.K8sClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+					if err != nil {
+						log.Error(err, "Error creating namespace", "namespace", ns.Name)
+						continue
+					}
+					// Add the namespace to the cache
+					c.Cache.ObjMap[ns.Name] = ns
+				case err != nil:
+					log.Error(err, "Error getting namespace", "namespace", ns.Name)
+					continue
+				}
+			}
+
 			for _, obj := range c.GetMatchingNamespaces(msg.Config) {
 				log.Info("Processing obj", "obj", obj.Name)
 				if err := c.Update(obj, msg.Config); err != nil {

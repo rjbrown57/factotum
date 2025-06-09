@@ -13,3 +13,6 @@ spec:
     factotum: applied
   labels:
     factotum: applied
+  namespaces:
+    - name: facto1
+    - name: facto2
