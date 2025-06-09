@@ -31,7 +31,8 @@ import (
 // NamespaceConfigSpec defines the desired state of NamespaceConfig
 type NamespaceConfigSpec struct {
 	config.CommonSpec `json:",inline"`
-	Selector          NamespaceSelector `json:"selector,omitempty"`
+	Selector          NamespaceSelector   `json:"selector,omitempty"`
+	Namespaces        []FactotumNamespace `json:"namespaces,omitempty"`
 }
 
 // NamespaceConfigStatus defines the observed state of NamespaceConfig
@@ -67,6 +68,14 @@ func init() {
 
 type NamespaceSelector struct {
 	NamespaceSelector map[string]string `json:"namespaceSelector,omitempty"`
+}
+
+// FactotumNamespaces are namespaces that are managed by Factotum
+// They are used to create namespaces with specific labels and annotations
+type FactotumNamespace struct {
+	Name        string            `json:"name"`
+	Labels      map[string]string `json:"labels,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 func (nc *NamespaceConfig) RemoveFinalizer() {

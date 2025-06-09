@@ -49,6 +49,26 @@ spec:
                   type: string
                 description: Labels to Apply to Selected Objects
                 type: object
+              namespaces:
+                items:
+                  description: |-
+                    FactotumNamespaces are namespaces that are managed by Factotum
+                    They are used to create namespaces with specific labels and annotations
+                  properties:
+                    annotations:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    labels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
               selector:
                 properties:
                   namespaceSelector:
