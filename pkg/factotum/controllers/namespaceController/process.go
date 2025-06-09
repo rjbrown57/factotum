@@ -53,8 +53,8 @@ func (c *NamespaceController) Proccessor() error {
 					ns := &v1.Namespace{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:        ns.Name,
-							Labels:      msg.Config.Labels,
-							Annotations: msg.Config.Annotations,
+							Labels:      msg.Config.Spec.Labels,
+							Annotations: msg.Config.Spec.Annotations,
 						},
 					}
 					ns, err = c.K8sClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
@@ -114,6 +114,14 @@ func (c *NamespaceController) GetMatchingNamespaceConfigs(obj *v1.Namespace) []*
 func (c *NamespaceController) GetMatchingNamespaces(NamespaceConfig *v1alpha1.NamespaceConfig) []*v1.Namespace {
 	var matchingNamespaces []*v1.Namespace
 
+	// Manage any created NS
+	for _, obj := range NamespaceConfig.Spec.Namespaces {
+		if ns, exists := c.Cache.Get(obj.Name); exists {
+			matchingNamespaces = append(matchingNamespaces, ns)
+		}
+	}
+
+	// Manage any selected NS
 	for _, obj := range c.Cache.ObjMap {
 		if NamespaceConfig.Match(obj) {
 			matchingNamespaces = append(matchingNamespaces, obj)
